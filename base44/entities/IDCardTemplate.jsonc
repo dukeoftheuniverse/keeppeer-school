@@ -13,9 +13,27 @@
       ],
       "default": "student"
     },
+    "orientation": {
+      "type": "string",
+      "enum": [
+        "landscape",
+        "portrait"
+      ],
+      "default": "landscape"
+    },
     "primary_color": {
       "type": "string",
       "default": "#004D5A"
+    },
+    "footer_text": {
+      "type": "string",
+      "default": "Be Respectful. Be Responsible. Be a KeepPeer."
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "background_url": {
+      "type": "string"
     },
     "expiry_months": {
       "type": "number",

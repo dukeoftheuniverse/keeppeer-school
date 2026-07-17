@@ -1,26 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, KpButton, StatusBadge, EmptyState } from '@/components/kp/ui';
-import { Plus, MoreVertical, Upload, Info, Pencil, Trash2, Check } from 'lucide-react';
+import { Plus, MoreVertical, Upload, Info, Pencil, Trash2, Check, Loader2, Image as ImageIcon, RotateCcw, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { logAudit } from '@/lib/audit';
 import { IDCardFront } from '@/components/kp/IDCardPreview';
+
+const SAMPLE_LOGO = 'https://media.base44.com/images/public/6a599666b848d4d07cd0e975/af88c433d_generated_image.png';
 
 const THEMES = {
   blue: { primary_color: '#0056D2', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.' },
   green: { primary_color: '#166534', footer_text: 'Excellence. Integrity. Service.' },
-  white: { primary_color: '#0EA5E9', footer_text: 'Learn Today. Lead Tomorrow.' },
+  sky: { primary_color: '#0EA5E9', footer_text: 'Learn Today. Lead Tomorrow.' },
   navy: { primary_color: '#1E293B', footer_text: 'Innovate. Create. Elevate.' },
   teal: { primary_color: '#004D5A', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.' },
 };
 
-const BACKGROUND_PRESETS = [
-  { name: 'Blue Wave', theme: 'blue' },
-  { name: 'Green Wave', theme: 'green' },
-  { name: 'Dark Blue Geometric', theme: 'navy' },
-  { name: 'White Minimal', theme: 'white' },
-  { name: 'Blue Yellow Accent', theme: 'blue' },
-  { name: 'Navy Gold', theme: 'navy' },
+const SAMPLE_TEMPLATES = [
+  { name: 'Default Student ID', template_type: 'student', orientation: 'landscape', primary_color: '#0056D2', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'High School Student ID', template_type: 'student', orientation: 'landscape', primary_color: '#166534', footer_text: 'Excellence. Integrity. Service.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Colorful Student ID', template_type: 'student', orientation: 'portrait', primary_color: '#0EA5E9', footer_text: 'Learn Today. Lead Tomorrow.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'College Student ID', template_type: 'student', orientation: 'portrait', primary_color: '#1E293B', footer_text: 'Innovate. Create. Elevate.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Default Teacher ID', template_type: 'employee', orientation: 'landscape', primary_color: '#004D5A', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Premium Teacher ID', template_type: 'employee', orientation: 'portrait', primary_color: '#1E293B', footer_text: 'Excellence in Education.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
 ];
+
+const SAMPLE_BACKGROUNDS = [
+  { name: 'Blue Wave', url: '', gradient: 'linear-gradient(135deg, #0056D2, #0056D2cc)', date: 'Jul 10, 2026' },
+  { name: 'Green Wave', url: '', gradient: 'linear-gradient(135deg, #166534, #166534cc)', date: 'Jul 8, 2026' },
+  { name: 'Dark Blue Geometric', url: '', gradient: 'linear-gradient(135deg, #1E293B, #334155)', date: 'Jul 5, 2026' },
+  { name: 'White Minimal', url: '', gradient: 'linear-gradient(135deg, #f8fafc, #e2e8f0)', date: 'Jul 3, 2026' },
+  { name: 'Teal Accent', url: '', gradient: 'linear-gradient(135deg, #004D5A, #0EA5E9)', date: 'Jul 1, 2026' },
+  { name: 'Navy Gold', url: '', gradient: 'linear-gradient(135deg, #1E293B, #D4A017)', date: 'Jun 28, 2026' },
+];
+
+const BG_STORAGE_KEY = 'kp_id_backgrounds';
 
 export default function TemplateManager() {
   const [tab, setTab] = useState('student');
@@ -29,29 +42,50 @@ export default function TemplateManager() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [menuOpen, setMenuOpen] = useState(null);
-  const [selectedBg, setSelectedBg] = useState('blue');
+  const [backgrounds, setBackgrounds] = useState(SAMPLE_BACKGROUNDS);
+  const [selectedBg, setSelectedBg] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const load = () => {
+  const load = async () => {
     setLoading(true);
-    base44.entities.IDCardTemplate.list('-created_date').then(res => setTemplates(res)).catch(() => {}).finally(() => setLoading(false));
+    try {
+      let res = await base44.entities.IDCardTemplate.list('-created_date');
+      if (res.length === 0) {
+        // Seed sample templates
+        res = await base44.entities.IDCardTemplate.bulkCreate(SAMPLE_TEMPLATES);
+      }
+      setTemplates(res);
+    } catch (e) { /* */ }
+    setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  const loadBackgrounds = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(BG_STORAGE_KEY) || '[]');
+      setBackgrounds([...stored, ...SAMPLE_BACKGROUNDS]);
+    } catch (e) { setBackgrounds(SAMPLE_BACKGROUNDS); }
+  };
+
+  useEffect(() => { load(); loadBackgrounds(); }, []);
 
   const filtered = templates.filter(t =>
     (tab === 'student' ? t.template_type === 'student' : t.template_type === 'employee') &&
-    (t.name?.toLowerCase().includes(search.toLowerCase()) || true)
+    (t.name?.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleCreate = async (data) => {
     await base44.entities.IDCardTemplate.create({
       name: data.name,
       template_type: tab,
+      orientation: data.orientation,
       primary_color: data.primary_color,
+      footer_text: data.footer_text,
+      logo_url: data.logo_url || SAMPLE_LOGO,
       expiry_months: data.expiry_months || 12,
       fields: 'name,photo,id,qr',
     });
-    logAudit('create_template', 'IDCardTemplate', '', `Created ${data.name}`);
+    logAudit('create_template', 'IDCardTemplate', '', `Created ${data.name} (${data.orientation})`);
     setShowCreate(false);
     load();
   };
@@ -60,6 +94,32 @@ export default function TemplateManager() {
     await base44.entities.IDCardTemplate.delete(id);
     setMenuOpen(null);
     load();
+  };
+
+  const handleUploadBackground = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const stored = JSON.parse(localStorage.getItem(BG_STORAGE_KEY) || '[]');
+      const newBg = { name: file.name.replace(/\.[^.]+$/, '').slice(0, 24) || 'Custom Background', url: file_url, gradient: '', date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) };
+      stored.unshift(newBg);
+      localStorage.setItem(BG_STORAGE_KEY, JSON.stringify(stored));
+      loadBackgrounds();
+      setSelectedBg(0);
+    } catch (err) { /* */ }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const deleteBackground = (idx) => {
+    if (idx >= SAMPLE_BACKGROUNDS.length) {
+      const stored = JSON.parse(localStorage.getItem(BG_STORAGE_KEY) || '[]');
+      stored.splice(idx - SAMPLE_BACKGROUNDS.length, 1);
+      localStorage.setItem(BG_STORAGE_KEY, JSON.stringify(stored));
+      loadBackgrounds();
+    }
   };
 
   return (
@@ -90,22 +150,26 @@ export default function TemplateManager() {
         {loading ? (
           <div className="text-center py-8 text-gray-400 text-sm">Loading templates...</div>
         ) : filtered.length === 0 ? (
-          <EmptyState message="No templates yet. Click 'Create Template' to add one." />
+          <EmptyState message="No templates match your search." />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {filtered.map(tpl => {
-              const theme = THEMES[tpl.primary_color] || { primary_color: tpl.primary_color || '#004D5A', footer_text: tpl.fields || 'Be Respectful.' };
-              const sample = { name: 'Sample Name', type: tpl.template_type, grade: 'Grade 7', section: 'A', lrn: '13600125001', photo_url: '', qr_id: 'SAMPLE' };
+              const theme = { primary_color: tpl.primary_color || '#004D5A', footer_text: tpl.footer_text || 'Be Respectful.', logo_url: tpl.logo_url || SAMPLE_LOGO, orientation: tpl.orientation || 'landscape' };
+              const sample = { name: 'Juan Dela Cruz', type: tpl.template_type, grade: 'Grade 7', section: 'A', lrn: '13600125001', photo_url: '', qr_id: 'KP-SAMPLE-001' };
               return (
                 <div key={tpl.id} className="relative rounded-xl border border-gray-100 bg-white overflow-hidden group">
                   <div className="relative p-3">
-                    <IDCardFront person={sample} school={{ school_name: 'KeepPeer Elementary School', academic_year: '2026-2027', school_id: '100567' }} cardNumber="ID-00000001" template={theme} />
+                    <IDCardFront person={sample} school={{ school_name: 'KeepPeer Elementary School', academic_year: '2026-2027', school_id: '100567', logo_url: tpl.logo_url || SAMPLE_LOGO }} cardNumber="ID-00000001" template={theme} />
                   </div>
                   <div className="px-3 pb-3">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-semibold text-gray-700">{tpl.name}</div>
-                        <div className="text-[10px] text-gray-400 mt-0.5">Updated: {new Date(tpl.updated_date || tpl.created_date).toLocaleDateString()}</div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-gray-700 truncate">{tpl.name}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1.5">
+                          <span className="capitalize">{tpl.orientation || 'landscape'}</span>
+                          <span>•</span>
+                          <span>Updated: {new Date(tpl.updated_date || tpl.created_date).toLocaleDateString()}</span>
+                        </div>
                       </div>
                       <StatusBadge status="active" />
                     </div>
@@ -116,7 +180,7 @@ export default function TemplateManager() {
                   </button>
                   {menuOpen === tpl.id && (
                     <div className="absolute bottom-12 right-3 z-10 w-32 rounded-lg border border-gray-100 bg-white shadow-lg py-1">
-                      <button onClick={() => { setMenuOpen(null); }} className="w-full px-3 py-1.5 text-left text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"><Pencil className="w-3 h-3" /> Edit</button>
+                      <button onClick={() => setMenuOpen(null)} className="w-full px-3 py-1.5 text-left text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"><Pencil className="w-3 h-3" /> Edit</button>
                       <button onClick={() => handleDelete(tpl.id)} className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 className="w-3 h-3" /> Delete</button>
                     </div>
                   )}
@@ -134,29 +198,39 @@ export default function TemplateManager() {
             <h2 className="text-lg font-bold text-[hsl(var(--kp-teal))]">ID Backgrounds</h2>
             <p className="text-xs text-gray-500">Upload and manage background designs for your ID cards.</p>
           </div>
-          <KpButton variant="green"><Upload className="w-4 h-4" /> Upload Background</KpButton>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUploadBackground} className="hidden" />
+          <KpButton variant="green" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+            {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : <><Upload className="w-4 h-4" /> Upload Background</>}
+          </KpButton>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-          {BACKGROUND_PRESETS.map((bg, i) => {
-            const isActive = selectedBg === bg.theme + i;
+          {backgrounds.map((bg, i) => {
+            const isActive = selectedBg === i;
+            const isCustom = !!bg.url;
             return (
               <div key={i} className="relative">
-                <div onClick={() => setSelectedBg(bg.theme + i)}
+                <div onClick={() => setSelectedBg(i)}
                   className={`aspect-[1.585/1] rounded-lg overflow-hidden cursor-pointer relative border-2 ${isActive ? 'border-[hsl(var(--kp-teal))]' : 'border-gray-100'}`}>
-                  <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${THEMES[bg.theme].primary_color}, ${THEMES[bg.theme].primary_color}cc)` }}>
-                    <div className="w-full h-full opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, white 0%, transparent 40%), radial-gradient(circle at 70% 70%, white 0%, transparent 40%)' }} />
-                  </div>
+                  {bg.url ? (
+                    <img src={bg.url} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full relative" style={{ background: bg.gradient }}>
+                      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 30% 30%, white 0%, transparent 40%), radial-gradient(circle at 70% 70%, white 0%, transparent 40%)' }} />
+                    </div>
+                  )}
                   {isActive && (
                     <>
                       <div className="absolute top-1.5 left-1.5"><StatusBadge status="active" /></div>
                       <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[hsl(var(--kp-teal))] flex items-center justify-center"><Check className="w-3 h-3 text-white" /></div>
                     </>
                   )}
-                  <button onClick={(e) => { e.stopPropagation(); }} className="absolute bottom-1.5 right-1.5 p-1 rounded-md bg-white/80 text-gray-500 hover:bg-white"><MoreVertical className="w-3 h-3" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); if (isCustom) deleteBackground(i); }} className="absolute bottom-1.5 right-1.5 p-1 rounded-md bg-white/80 text-gray-500 hover:bg-white">
+                    <MoreVertical className="w-3 h-3" />
+                  </button>
                 </div>
-                <div className="text-[10px] text-gray-500 mt-1.5 text-center">{bg.name}</div>
-                <div className="text-[9px] text-gray-300 text-center">Uploaded: Jul {17 - i}, 2026</div>
+                <div className="text-[10px] text-gray-500 mt-1.5 text-center truncate">{bg.name}</div>
+                <div className="text-[9px] text-gray-300 text-center">{isCustom ? 'Uploaded' : 'Uploaded'}: {bg.date}</div>
               </div>
             );
           })}
@@ -168,45 +242,95 @@ export default function TemplateManager() {
         </div>
       </PagePanel>
 
-      {showCreate && <CreateTemplateModal tab={tab} onClose={() => setShowCreate(false)} onCreate={handleCreate} />}
+      {showCreate && <CreateTemplateModal tab={tab} onClose={() => setShowCreate(false)} onCreate={handleCreate} backgrounds={backgrounds} />}
     </div>
   );
 }
 
-function CreateTemplateModal({ tab, onClose, onCreate }) {
+function CreateTemplateModal({ tab, onClose, onCreate, backgrounds }) {
   const [name, setName] = useState('');
   const [theme, setTheme] = useState('blue');
+  const [orientation, setOrientation] = useState('landscape');
   const [expiry, setExpiry] = useState(12);
+  const [footer, setFooter] = useState(THEMES.blue.footer_text);
+  const [useBg, setUseBg] = useState(null);
+
+  const sample = { name: 'Juan Dela Cruz', type: tab, grade: 'Grade 7', section: 'A', lrn: '13600125001', photo_url: '', qr_id: 'KP-SAMPLE-001' };
+  const previewTemplate = {
+    primary_color: THEMES[theme].primary_color,
+    footer_text: footer,
+    logo_url: SAMPLE_LOGO,
+    orientation,
+    background_url: useBg !== null ? backgrounds[useBg]?.url : '',
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-5 max-h-[90vh] overflow-y-auto kp-scroll-thin" onClick={e => e.stopPropagation()}>
         <h3 className="text-base font-bold text-[hsl(var(--kp-teal))] mb-4">New {tab === 'student' ? 'Student' : 'Teacher'} Template</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Template Name</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Default Student ID"
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Theme Color</label>
-            <div className="flex gap-2">
-              {Object.entries(THEMES).map(([key, t]) => (
-                <button key={key} onClick={() => setTheme(key)}
-                  className={`w-8 h-8 rounded-full border-2 ${theme === key ? 'border-gray-800' : 'border-transparent'}`}
-                  style={{ background: t.primary_color }} title={key} />
-              ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Template Name</label>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Default Student ID"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Orientation</label>
+              <div className="flex gap-2">
+                <button onClick={() => setOrientation('landscape')} className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 border ${orientation === 'landscape' ? 'border-[hsl(var(--kp-teal))] bg-[hsl(var(--accent))] text-[hsl(var(--kp-teal))]' : 'border-gray-200 text-gray-500'}`}>
+                  <RectangleHorizontal className="w-4 h-4" /> Landscape
+                </button>
+                <button onClick={() => setOrientation('portrait')} className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 border ${orientation === 'portrait' ? 'border-[hsl(var(--kp-teal))] bg-[hsl(var(--accent))] text-[hsl(var(--kp-teal))]' : 'border-gray-200 text-gray-500'}`}>
+                  <RectangleVertical className="w-4 h-4" /> Portrait
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Theme Color</label>
+              <div className="flex gap-2">
+                {Object.entries(THEMES).map(([key, t]) => (
+                  <button key={key} onClick={() => { setTheme(key); setFooter(t.footer_text); }}
+                    className={`w-8 h-8 rounded-full border-2 ${theme === key ? 'border-gray-800' : 'border-transparent'}`}
+                    style={{ background: t.primary_color }} title={key} />
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Footer Text</label>
+              <input value={footer} onChange={e => setFooter(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Background (optional)</label>
+              <div className="flex gap-1.5 flex-wrap">
+                <button onClick={() => setUseBg(null)} className={`px-2.5 py-1 rounded-md text-xs border ${useBg === null ? 'border-[hsl(var(--kp-teal))] text-[hsl(var(--kp-teal))] bg-[hsl(var(--accent))]' : 'border-gray-200 text-gray-400'}`}>None</button>
+                {backgrounds.slice(0, 8).map((bg, i) => (
+                  <button key={i} onClick={() => setUseBg(i)} title={bg.name}
+                    className={`w-8 h-8 rounded-md border-2 ${useBg === i ? 'border-gray-800' : 'border-gray-200'} overflow-hidden`}>
+                    {bg.url ? <img src={bg.url} className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: bg.gradient }} />}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Expiry (months)</label>
+              <input type="number" value={expiry} onChange={e => setExpiry(Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
             </div>
           </div>
+
           <div>
-            <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Expiry (months)</label>
-            <input type="number" value={expiry} onChange={e => setExpiry(Number(e.target.value))}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
+            <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-2 block">Live Preview</label>
+            <div className="bg-gray-50 rounded-xl p-4">
+              <IDCardFront person={sample} school={{ school_name: 'KeepPeer Elementary School', academic_year: '2026-2027', school_id: '100567', logo_url: SAMPLE_LOGO }} cardNumber="ID-00000001" template={previewTemplate} />
+            </div>
           </div>
         </div>
+
         <div className="flex gap-2 mt-5 justify-end">
           <KpButton variant="light" onClick={onClose}>Cancel</KpButton>
-          <KpButton variant="green" disabled={!name.trim()} onClick={() => onCreate({ name, primary_color: THEMES[theme].primary_color, expiry_months: expiry })}>Create Template</KpButton>
+          <KpButton variant="green" disabled={!name.trim()} onClick={() => onCreate({ name, primary_color: THEMES[theme].primary_color, footer_text: footer, orientation, expiry_months: expiry, background_url: useBg !== null ? backgrounds[useBg]?.url : '', logo_url: SAMPLE_LOGO })}>Create Template</KpButton>
         </div>
       </div>
     </div>

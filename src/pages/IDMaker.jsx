@@ -17,9 +17,15 @@ export default function IDMaker() {
   const [generating, setGenerating] = useState(false);
   const [generatedCard, setGeneratedCard] = useState(null);
   const [todayLogs, setTodayLogs] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   useEffect(() => {
     base44.entities.School.list().then(res => setSchool(res[0])).catch(() => {});
+    base44.entities.IDCardTemplate.list('-created_date').then(res => {
+      setTemplates(res);
+      setSelectedTemplate(res[0] || null);
+    }).catch(() => {});
     const loadPeople = () => {
       Promise.all([base44.entities.Student.list(), base44.entities.Employee.list()])
         .then(([students, employees]) => {
@@ -100,7 +106,9 @@ export default function IDMaker() {
     a.click();
   };
 
-  const template = { primary_color: '#0056D2', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.' };
+  const template = selectedTemplate
+    ? { primary_color: selectedTemplate.primary_color, footer_text: selectedTemplate.footer_text, logo_url: selectedTemplate.logo_url, orientation: selectedTemplate.orientation, background_url: selectedTemplate.background_url }
+    : { primary_color: '#0056D2', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.' };
   const today = new Date().toLocaleDateString('en-CA');
   const todayEntries = todayLogs.filter(a => a.date === today && a.person_type === 'student' && a.scan_type === 'time_in');
   const todayExits = todayLogs.filter(a => a.date === today && a.person_type === 'student' && a.scan_type === 'time_out');
@@ -195,11 +203,19 @@ export default function IDMaker() {
           {/* Right: Preview */}
           <div className="lg:col-span-8">
             <PagePanel>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">ID Card Preview</h3>
-                {selected && generatedCard && (
-                  <KpButton variant="outline" onClick={downloadPreview}><Download className="w-4 h-4" /> Download Preview</KpButton>
-                )}
+                <div className="flex items-center gap-2">
+                  {templates.length > 0 && (
+                    <select value={selectedTemplate?.id || ''} onChange={e => setSelectedTemplate(templates.find(t => t.id === e.target.value))}
+                      className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15">
+                      {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.orientation || 'landscape'})</option>)}
+                    </select>
+                  )}
+                  {selected && generatedCard && (
+                    <KpButton variant="outline" onClick={downloadPreview}><Download className="w-4 h-4" /> Download Preview</KpButton>
+                  )}
+                </div>
               </div>
 
               {!selected ? (
