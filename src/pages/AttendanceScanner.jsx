@@ -5,6 +5,7 @@ import { Camera, QrCode, ScanFace, Fingerprint, LogIn, LogOut, UserCheck, UserX,
 import { logAudit, createNotification } from '@/lib/audit';
 import FacialScanner from '@/components/kp/FacialScanner';
 import BiometricScanner from '@/components/kp/BiometricScanner';
+import QrScanner from '@/components/kp/QrScanner';
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
@@ -308,38 +309,7 @@ export default function AttendanceScanner() {
 
               {/* QR Method */}
               {method === 'qr' && (
-                <>
-                  <div className="relative aspect-video max-w-md mx-auto rounded-2xl overflow-hidden bg-gray-900 mb-4">
-                    {scanning ? (
-                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
-                        <Camera className="w-12 h-12 mb-2" />
-                        <p className="text-sm">Camera is off</p>
-                      </div>
-                    )}
-                    {scanning && <div className="absolute inset-x-8 top-1/2 h-0.5 bg-[hsl(var(--kp-green))] animate-pulse" />}
-                    <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-black/50 text-white text-xs flex items-center gap-1">
-                      <span className={`w-1.5 h-1.5 rounded-full ${scanning ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
-                      {scanning ? 'Scanning...' : 'Idle'}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-center gap-2 mb-4">
-                    {!scanning ? <KpButton variant="green" onClick={startCamera}><Camera className="w-4 h-4" /> Start Camera</KpButton>
-                    : <KpButton variant="danger" onClick={stopCamera}>Stop Camera</KpButton>}
-                  </div>
-
-                  <form onSubmit={handleManualSubmit} className="max-w-md mx-auto">
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <QrCode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input value={manualQR} onChange={e => setManualQR(e.target.value)} placeholder="Enter QR code manually..." className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
-                      </div>
-                      <KpButton type="submit" variant="teal">Scan</KpButton>
-                    </div>
-                  </form>
-                </>
+                <QrScanner onDetect={(val) => processScan(val)} />
               )}
 
               {/* Facial Recognition Method */}

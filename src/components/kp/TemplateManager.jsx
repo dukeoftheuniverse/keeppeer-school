@@ -16,12 +16,16 @@ const THEMES = {
 };
 
 const SAMPLE_TEMPLATES = [
-  { name: 'Default Student ID', template_type: 'student', orientation: 'landscape', primary_color: '#0056D2', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
-  { name: 'High School Student ID', template_type: 'student', orientation: 'landscape', primary_color: '#166534', footer_text: 'Excellence. Integrity. Service.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
-  { name: 'Colorful Student ID', template_type: 'student', orientation: 'portrait', primary_color: '#0EA5E9', footer_text: 'Learn Today. Lead Tomorrow.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
-  { name: 'College Student ID', template_type: 'student', orientation: 'portrait', primary_color: '#1E293B', footer_text: 'Innovate. Create. Elevate.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
-  { name: 'Default Teacher ID', template_type: 'employee', orientation: 'landscape', primary_color: '#004D5A', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
-  { name: 'Premium Teacher ID', template_type: 'employee', orientation: 'portrait', primary_color: '#1E293B', footer_text: 'Excellence in Education.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Classic Blue Student', template_type: 'student', orientation: 'landscape', primary_color: '#0056D2', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Forest Green Student', template_type: 'student', orientation: 'landscape', primary_color: '#166534', footer_text: 'Excellence. Integrity. Service.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Sky Youth Student', template_type: 'student', orientation: 'portrait', primary_color: '#0EA5E9', footer_text: 'Learn Today. Lead Tomorrow.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Scholar Navy Student', template_type: 'student', orientation: 'portrait', primary_color: '#1E293B', footer_text: 'Innovate. Create. Elevate.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Royal Violet Student', template_type: 'student', orientation: 'portrait', primary_color: '#6D28D9', footer_text: 'Dream Big. Learn Bigger.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'Sunrise Amber Student', template_type: 'student', orientation: 'landscape', primary_color: '#C2410C', footer_text: 'Rise and Shine to Learn.', logo_url: SAMPLE_LOGO, expiry_months: 12 },
+  { name: 'KeepPeer Teal Teacher', template_type: 'employee', orientation: 'landscape', primary_color: '#004D5A', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.', logo_url: SAMPLE_LOGO, expiry_months: 24 },
+  { name: 'Premium Navy Teacher', template_type: 'employee', orientation: 'portrait', primary_color: '#1E293B', footer_text: 'Excellence in Education.', logo_url: SAMPLE_LOGO, expiry_months: 24 },
+  { name: 'Crimson Faculty Teacher', template_type: 'employee', orientation: 'portrait', primary_color: '#991B1B', footer_text: 'Teach. Inspire. Transform.', logo_url: SAMPLE_LOGO, expiry_months: 24 },
+  { name: 'Ocean Staff Teacher', template_type: 'employee', orientation: 'landscape', primary_color: '#075985', footer_text: 'Guiding Future Leaders.', logo_url: SAMPLE_LOGO, expiry_months: 24 },
 ];
 
 const SAMPLE_BACKGROUNDS = [
@@ -56,7 +60,7 @@ export default function TemplateManager() {
       if (res.length === 0) {
         // Seed sample templates (mark first of each type as default)
         const seeded = await base44.entities.IDCardTemplate.bulkCreate(
-          SAMPLE_TEMPLATES.map((t, i) => ({ ...t, is_default: i === 0 || i === 4 }))
+          SAMPLE_TEMPLATES.map((t, i) => ({ ...t, is_default: i === 0 || i === 6 }))
         );
         res = seeded;
       }
@@ -223,7 +227,7 @@ export default function TemplateManager() {
               const theme = { primary_color: tpl.primary_color || '#004D5A', footer_text: tpl.footer_text || 'Be Respectful.', logo_url: tpl.logo_url || SAMPLE_LOGO, orientation: tpl.orientation || 'landscape' };
               const sample = { name: 'Juan Dela Cruz', type: tpl.template_type, grade: 'Grade 7', section: 'A', lrn: '13600125001', photo_url: '', qr_id: 'KP-SAMPLE-001' };
               return (
-                <div key={tpl.id} className="relative rounded-xl border border-gray-100 bg-white overflow-hidden group">
+                <div key={tpl.id} className="relative rounded-xl kp-glass-card overflow-hidden group">
                   <div className="relative p-3">
                     <IDCardFront person={sample} school={{ school_name: 'KeepPeer Elementary School', academic_year: '2026-2027', school_id: '100567', logo_url: tpl.logo_url || SAMPLE_LOGO }} cardNumber="ID-00000001" template={theme} />
                   </div>
@@ -260,7 +264,7 @@ export default function TemplateManager() {
                     </div>
                   </div>
                   {menuOpen === tpl.id && (
-                    <div className="absolute bottom-14 right-3 z-10 w-36 rounded-lg border border-gray-100 bg-white shadow-lg py-1">
+                    <div className="absolute bottom-14 right-3 z-10 w-36 rounded-lg kp-glass-card shadow-lg py-1">
                       <button onClick={() => handleEdit(tpl)} className="w-full px-3 py-1.5 text-left text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"><Pencil className="w-3 h-3" /> Edit Template</button>
                       <button onClick={() => handleApplyDefault(tpl)} className="w-full px-3 py-1.5 text-left text-xs text-[hsl(var(--kp-teal))] hover:bg-[hsl(var(--accent))] flex items-center gap-2"><Check className="w-3 h-3" /> Set as Default</button>
                       <button onClick={() => handleDelete(tpl.id)} className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 className="w-3 h-3" /> Delete</button>
@@ -357,7 +361,7 @@ function CreateTemplateModal({ tab, onClose, onCreate, backgrounds, template }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-5 max-h-[90vh] overflow-y-auto kp-scroll-thin" onClick={e => e.stopPropagation()}>
+      <div className="kp-panel rounded-2xl shadow-xl w-full max-w-3xl p-5 max-h-[90vh] overflow-y-auto kp-scroll-thin" onClick={e => e.stopPropagation()}>
         <h3 className="text-base font-bold text-[hsl(var(--kp-teal))] mb-4">{isEdit ? 'Edit' : 'New'} {tab === 'student' ? 'Student' : 'Teacher'} Template</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-3">
