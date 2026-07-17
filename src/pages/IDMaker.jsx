@@ -51,6 +51,13 @@ export default function IDMaker() {
     ));
   }, [query, searchType, allPeople]);
 
+  // Auto-select the default template for the current person type
+  useEffect(() => {
+    if (!templates.length) return;
+    const def = templates.find(t => t.template_type === searchType && t.is_default);
+    if (def) setSelectedTemplate(def);
+  }, [searchType, templates]);
+
   const filteredResults = results.filter(p => p.type === (searchType === 'student' ? 'student' : 'employee'));
 
   const handleGenerate = async () => {
@@ -209,7 +216,9 @@ export default function IDMaker() {
                   {templates.length > 0 && (
                     <select value={selectedTemplate?.id || ''} onChange={e => setSelectedTemplate(templates.find(t => t.id === e.target.value))}
                       className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15">
-                      {templates.map(t => <option key={t.id} value={t.id}>{t.name} ({t.orientation || 'landscape'})</option>)}
+                      {templates.filter(t => t.template_type === searchType).map(t => (
+                        <option key={t.id} value={t.id}>{t.name} — {t.orientation || 'landscape'}{t.is_default ? ' (Default)' : ''}</option>
+                      ))}
                     </select>
                   )}
                   {selected && generatedCard && (

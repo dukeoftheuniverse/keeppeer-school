@@ -45,6 +45,8 @@ export default function TemplateManager() {
   const [backgrounds, setBackgrounds] = useState(SAMPLE_BACKGROUNDS);
   const [selectedBg, setSelectedBg] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [applying, setApplying] = useState(null);
   const fileInputRef = useRef(null);
 
   const load = async () => {
@@ -52,8 +54,25 @@ export default function TemplateManager() {
     try {
       let res = await base44.entities.IDCardTemplate.list('-created_date');
       if (res.length === 0) {
-        // Seed sample templates
-        res = await base44.entities.IDCardTemplate.bulkCreate(SAMPLE_TEMPLATES);
+        // Seed sample templates (mark first of each type as default)
+        const seeded = await base44.entities.IDCardTemplate.bulkCreate(
+          SAMPLE_TEMPLATES.map((t, i) => ({ ...t, is_default: i === 0 || i === 4 }))
+        );
+        res = seeded;
+      }
+      // Ensure each type has exactly one default
+      const hasStudentDefault = res.some(t => t.template_type === 'student' && t.is_default);
+      const hasEmployeeDefault = res.some(t => t.template_type === 'employee' && t.is_default);
+      if (!hasStudentDefault || !hasEmployeeDefault) {
+        const updates = [];
+        if (!hasStudentDefault) {
+          const s = res.find(t => t.template_type === 'student');
+          if (s) { await base44.entities.IDCardTemplate.update(s.id, { is_default: true }); s.is_default = true; }
+        }
+        if (!hasEmployeeDefault) {
+          const e = res.find(t => t.template_type === 'employee');
+          if (e) { await base44.entities.IDCardTemplate.update(e.id, { is_default: true }); e.is_default = true; }
+        }
       }
       setTemplates(res);
     } catch (e) { /* */ }
@@ -90,8 +109,50 @@ export default function TemplateManager() {
     load();
   };
 
+  const handleApplyDefault = async (tpl) => {
+    setApplying(tpl.id);
+    try {
+      // Unset all same-type templates, then set this one as default
+      const sameType = templates.filter(t => t.template_type === tpl.template_type && t.id !== tpl.id);
+      await base44.entities.IDCardTemplate.bulkUpdate(sameType.map(t => ({ id: t.id, is_default: false })));
+      await base44.entities.IDCardTemplate.update(tpl.id, { is_default: true });
+      logAudit('apply_default_template', 'IDCardTemplate', tpl.id, `Set "${tpl.name}" as default ${tpl.template_type} template`);
+      setMenuOpen(null);
+      load();
+    } catch (e) { /* */ }
+    setApplying(null);
+  };
+
+  const handleEdit = (tpl) => {
+    setMenuOpen(null);
+    setEditing(tpl);
+  };
+
+  const handleSaveEdit = async (data) => {
+    if (editing) {
+      await base44.entities.IDCardTemplate.update(editing.id, {
+        name: data.name,
+        orientation: data.orientation,
+        primary_color: data.primary_color,
+        footer_text: data.footer_text,
+        background_url: data.background_url || '',
+        expiry_months: data.expiry_months || 12,
+      });
+      logAudit('update_template', 'IDCardTemplate', editing.id, `Updated ${data.name}`);
+    }
+    setEditing(null);
+    load();
+  };
+
   const handleDelete = async (id) => {
+    const tpl = templates.find(t => t.id === id);
     await base44.entities.IDCardTemplate.delete(id);
+    // If we deleted the default, promote another of the same type
+    if (tpl?.is_default) {
+      const remaining = await base44.entities.IDCardTemplate.list('-created_date');
+      const next = remaining.find(t => t.template_type === tpl.template_type);
+      if (next) await base44.entities.IDCardTemplate.update(next.id, { is_default: true });
+    }
     setMenuOpen(null);
     load();
   };
@@ -134,6 +195,11 @@ export default function TemplateManager() {
           <KpButton variant="green" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4" /> Create Template</KpButton>
         </div>
 
+        <div className="mb-4 p-3 rounded-lg bg-[hsl(var(--accent))] flex items-start gap-2">
+          <Info className="w-4 h-4 text-[hsl(var(--kp-teal))] shrink-0 mt-0.5" />
+          <p className="text-xs text-[hsl(var(--kp-teal))]">Click <span className="font-semibold">Apply</span> on any template to set it as the default for that category. The applied template is automatically used when generating new IDs in the Generator. Only one template per category (Student / Teacher) can be the default at a time.</p>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <div className="flex gap-1 border-b border-gray-100">
             {['student', 'employee'].map(t => (
@@ -162,7 +228,7 @@ export default function TemplateManager() {
                     <IDCardFront person={sample} school={{ school_name: 'KeepPeer Elementary School', academic_year: '2026-2027', school_id: '100567', logo_url: tpl.logo_url || SAMPLE_LOGO }} cardNumber="ID-00000001" template={theme} />
                   </div>
                   <div className="px-3 pb-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-gray-700 truncate">{tpl.name}</div>
                         <div className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1.5">
@@ -171,16 +237,32 @@ export default function TemplateManager() {
                           <span>Updated: {new Date(tpl.updated_date || tpl.created_date).toLocaleDateString()}</span>
                         </div>
                       </div>
-                      <StatusBadge status="active" />
+                      {tpl.is_default ? (
+                        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[hsl(var(--kp-green))]/15 text-[hsl(var(--kp-green))]"><Check className="w-2.5 h-2.5" /> Default</span>
+                      ) : (
+                        <span className="shrink-0 text-[10px] text-gray-300">Inactive</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2.5">
+                      {tpl.is_default ? (
+                        <div className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium text-[hsl(var(--kp-green))] bg-[hsl(var(--kp-green))]/10 flex items-center justify-center gap-1"><Check className="w-3 h-3" /> Applied</div>
+                      ) : (
+                        <button onClick={() => handleApplyDefault(tpl)} disabled={applying === tpl.id}
+                          className="flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium bg-[hsl(var(--kp-teal))] text-white hover:bg-[hsl(var(--kp-teal-dark))] flex items-center justify-center gap-1 disabled:opacity-50">
+                          {applying === tpl.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Apply
+                        </button>
+                      )}
+                      <button onClick={() => handleEdit(tpl)} className="px-2 py-1.5 rounded-lg text-[11px] font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 flex items-center gap-1"><Pencil className="w-3 h-3" /> Edit</button>
+                      <button onClick={() => setMenuOpen(menuOpen === tpl.id ? null : tpl.id)}
+                        className="px-2 py-1.5 rounded-lg text-gray-400 hover:bg-gray-100">
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                  <button onClick={() => setMenuOpen(menuOpen === tpl.id ? null : tpl.id)}
-                    className="absolute bottom-3 right-3 p-1.5 rounded-md hover:bg-gray-100 text-gray-400">
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
                   {menuOpen === tpl.id && (
-                    <div className="absolute bottom-12 right-3 z-10 w-32 rounded-lg border border-gray-100 bg-white shadow-lg py-1">
-                      <button onClick={() => setMenuOpen(null)} className="w-full px-3 py-1.5 text-left text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"><Pencil className="w-3 h-3" /> Edit</button>
+                    <div className="absolute bottom-14 right-3 z-10 w-36 rounded-lg border border-gray-100 bg-white shadow-lg py-1">
+                      <button onClick={() => handleEdit(tpl)} className="w-full px-3 py-1.5 text-left text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2"><Pencil className="w-3 h-3" /> Edit Template</button>
+                      <button onClick={() => handleApplyDefault(tpl)} className="w-full px-3 py-1.5 text-left text-xs text-[hsl(var(--kp-teal))] hover:bg-[hsl(var(--accent))] flex items-center gap-2"><Check className="w-3 h-3" /> Set as Default</button>
                       <button onClick={() => handleDelete(tpl.id)} className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 className="w-3 h-3" /> Delete</button>
                     </div>
                   )}
@@ -243,31 +325,40 @@ export default function TemplateManager() {
       </PagePanel>
 
       {showCreate && <CreateTemplateModal tab={tab} onClose={() => setShowCreate(false)} onCreate={handleCreate} backgrounds={backgrounds} />}
+      {editing && <CreateTemplateModal tab={tab} template={editing} onClose={() => setEditing(null)} onCreate={handleSaveEdit} backgrounds={backgrounds} />}
     </div>
   );
 }
 
-function CreateTemplateModal({ tab, onClose, onCreate, backgrounds }) {
-  const [name, setName] = useState('');
-  const [theme, setTheme] = useState('blue');
-  const [orientation, setOrientation] = useState('landscape');
-  const [expiry, setExpiry] = useState(12);
-  const [footer, setFooter] = useState(THEMES.blue.footer_text);
-  const [useBg, setUseBg] = useState(null);
+function CreateTemplateModal({ tab, onClose, onCreate, backgrounds, template }) {
+  const isEdit = !!template;
+  // Find matching theme key for an existing color
+  const initialThemeKey = template
+    ? Object.entries(THEMES).find(([, v]) => v.primary_color.toLowerCase() === (template.primary_color || '').toLowerCase())?.[0] || 'teal'
+    : 'blue';
+  const [name, setName] = useState(template?.name || '');
+  const [theme, setTheme] = useState(initialThemeKey);
+  const [orientation, setOrientation] = useState(template?.orientation || 'landscape');
+  const [expiry, setExpiry] = useState(template?.expiry_months || 12);
+  const [footer, setFooter] = useState(template?.footer_text || THEMES[initialThemeKey].footer_text);
+  const [useBg, setUseBg] = useState(template?.background_url ? backgrounds.findIndex(b => b.url === template.background_url) : null);
+  const [customColor, setCustomColor] = useState(template && !Object.values(THEMES).some(v => v.primary_color.toLowerCase() === (template.primary_color || '').toLowerCase()) ? template.primary_color : '');
+
+  const activeColor = customColor || THEMES[theme].primary_color;
 
   const sample = { name: 'Juan Dela Cruz', type: tab, grade: 'Grade 7', section: 'A', lrn: '13600125001', photo_url: '', qr_id: 'KP-SAMPLE-001' };
   const previewTemplate = {
-    primary_color: THEMES[theme].primary_color,
+    primary_color: activeColor,
     footer_text: footer,
-    logo_url: SAMPLE_LOGO,
+    logo_url: template?.logo_url || SAMPLE_LOGO,
     orientation,
-    background_url: useBg !== null ? backgrounds[useBg]?.url : '',
+    background_url: useBg !== null && backgrounds[useBg] ? backgrounds[useBg].url : (template?.background_url || ''),
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-5 max-h-[90vh] overflow-y-auto kp-scroll-thin" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-[hsl(var(--kp-teal))] mb-4">New {tab === 'student' ? 'Student' : 'Teacher'} Template</h3>
+        <h3 className="text-base font-bold text-[hsl(var(--kp-teal))] mb-4">{isEdit ? 'Edit' : 'New'} {tab === 'student' ? 'Student' : 'Teacher'} Template</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-3">
             <div>
@@ -288,12 +379,17 @@ function CreateTemplateModal({ tab, onClose, onCreate, backgrounds }) {
             </div>
             <div>
               <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Theme Color</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap items-center">
                 {Object.entries(THEMES).map(([key, t]) => (
-                  <button key={key} onClick={() => { setTheme(key); setFooter(t.footer_text); }}
-                    className={`w-8 h-8 rounded-full border-2 ${theme === key ? 'border-gray-800' : 'border-transparent'}`}
+                  <button key={key} onClick={() => { setTheme(key); setFooter(t.footer_text); setCustomColor(''); }}
+                    className={`w-8 h-8 rounded-full border-2 ${(customColor ? '' : theme === key) ? 'border-gray-800' : 'border-transparent'}`}
                     style={{ background: t.primary_color }} title={key} />
                 ))}
+                <div className="relative w-8 h-8 rounded-full border-2 border-gray-200 overflow-hidden">
+                  <input type="color" value={activeColor} onChange={e => setCustomColor(e.target.value)}
+                    className="absolute inset-0 w-full h-full cursor-pointer opacity-0" />
+                  <div className="w-full h-full" style={{ background: activeColor }} />
+                </div>
               </div>
             </div>
             <div>
@@ -330,7 +426,7 @@ function CreateTemplateModal({ tab, onClose, onCreate, backgrounds }) {
 
         <div className="flex gap-2 mt-5 justify-end">
           <KpButton variant="light" onClick={onClose}>Cancel</KpButton>
-          <KpButton variant="green" disabled={!name.trim()} onClick={() => onCreate({ name, primary_color: THEMES[theme].primary_color, footer_text: footer, orientation, expiry_months: expiry, background_url: useBg !== null ? backgrounds[useBg]?.url : '', logo_url: SAMPLE_LOGO })}>Create Template</KpButton>
+          <KpButton variant="green" disabled={!name.trim()} onClick={() => onCreate({ name, primary_color: activeColor, footer_text: footer, orientation, expiry_months: expiry, background_url: useBg !== null && backgrounds[useBg] ? backgrounds[useBg].url : '', logo_url: template?.logo_url || SAMPLE_LOGO })}>{isEdit ? 'Save Changes' : 'Create Template'}</KpButton>
         </div>
       </div>
     </div>

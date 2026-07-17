@@ -41,6 +41,10 @@
     },
     "fields": {
       "type": "string"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [
