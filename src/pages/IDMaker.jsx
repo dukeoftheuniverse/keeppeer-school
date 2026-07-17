@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, SearchInput, StatusBadge, EmptyState } from '@/components/kp/ui';
 import { Search, Printer, RefreshCw, QrCode, Building2, PenLine, Calendar } from 'lucide-react';
+import { logAudit } from '@/lib/audit';
 
 export default function IDMaker() {
   const [query, setQuery] = useState('');
@@ -33,8 +34,21 @@ export default function IDMaker() {
     } finally { setSearching(false); }
   };
 
-  const handleGenerate = () => {
-    setCardStatus('issued');
+  const handleGenerate = async () => {
+    if (!selected) return;
+    const cardNumber = 'ID-' + Date.now().toString().slice(-10);
+    const qrCode = selected.qr_id || `QR-${Date.now()}`;
+    const issueDate = new Date().toLocaleDateString('en-CA');
+    const expiryDate = new Date(new Date().getFullYear() + 1, 5, 30).toLocaleDateString('en-CA');
+    try {
+      await base44.entities.GeneratedIDCard.create({
+        person_id: selected.id, person_name: selected.name, person_type: selected.type,
+        card_number: cardNumber, qr_code: qrCode, status: cardStatus, issue_date: issueDate, expiry_date: expiryDate,
+      });
+      if (selected.type === 'student') await base44.entities.Student.update(selected.id, { id_card_id: cardNumber, qr_id: qrCode });
+      else await base44.entities.Employee.update(selected.id, { id_card_id: cardNumber });
+      logAudit('generate_id', 'GeneratedIDCard', selected.id, `${selected.name} - ${cardNumber}`);
+    } catch (e) { /* silent */ }
   };
 
   return (

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Mail, Lock, Eye, EyeOff, Loader2, MessageSquare } from "lucide-react";
+import { logLogin } from "@/lib/audit";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,8 +19,10 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.loginViaEmailPassword(email, password);
+      await logLogin(email, "success");
       window.location.href = "/";
     } catch (err) {
+      await logLogin(email, "failed", err.message || "Invalid credentials");
       setError(err.message || "Invalid email or password");
     } finally {
       setLoading(false);

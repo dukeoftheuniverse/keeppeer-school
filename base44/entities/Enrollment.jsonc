@@ -1,0 +1,44 @@
+{
+  "name": "Enrollment",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "class_id": {
+      "type": "string"
+    },
+    "class_name": {
+      "type": "string"
+    },
+    "academic_year_id": {
+      "type": "string"
+    },
+    "academic_year_name": {
+      "type": "string"
+    },
+    "enrollment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "enrolled",
+        "withdrawn",
+        "transferred"
+      ],
+      "default": "enrolled"
+    },
+    "previous_school": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "class_id"
+  ]
+}

@@ -55,7 +55,7 @@ export default function Employees() {
 
   return (
     <div className="space-y-4">
-      <PageTitle>Employees Profile</PageTitle>
+      <PageTitle>Employees</PageTitle>
       <PagePanel>
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <KpSelect value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="w-20">

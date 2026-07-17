@@ -1,0 +1,44 @@
+{
+  "name": "ClassSubject",
+  "type": "object",
+  "properties": {
+    "subject_id": {
+      "type": "string"
+    },
+    "subject_name": {
+      "type": "string"
+    },
+    "class_id": {
+      "type": "string"
+    },
+    "class_name": {
+      "type": "string"
+    },
+    "teacher_id": {
+      "type": "string"
+    },
+    "teacher_name": {
+      "type": "string"
+    },
+    "day": {
+      "type": "string"
+    },
+    "start_time": {
+      "type": "string"
+    },
+    "end_time": {
+      "type": "string"
+    },
+    "room": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string",
+      "default": "teal"
+    }
+  },
+  "required": [
+    "subject_id",
+    "class_id"
+  ]
+}

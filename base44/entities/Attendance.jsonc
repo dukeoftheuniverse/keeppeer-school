@@ -53,6 +53,23 @@
     },
     "section": {
       "type": "string"
+    },
+    "enrollment_id": {
+      "type": "string"
+    },
+    "id_card_id": {
+      "type": "string"
+    },
+    "id_card_status": {
+      "type": "string"
+    },
+    "inside_status": {
+      "type": "string",
+      "enum": [
+        "inside",
+        "outside"
+      ],
+      "default": "outside"
     }
   },
   "required": [

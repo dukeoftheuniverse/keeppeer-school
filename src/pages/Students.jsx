@@ -5,6 +5,7 @@ import { PagePanel, PageTitle, KpButton, StatusBadge, Avatar, SearchInput, Pagin
 import Drawer from '@/components/kp/Drawer';
 import ActionMenu from '@/components/kp/ActionMenu';
 import { UserPlus, Pencil, Archive, CreditCard, Eye, Upload, ArrowRightLeft } from 'lucide-react';
+import { logAudit } from '@/lib/audit';
 
 export default function Students() {
   const navigate = useNavigate();
@@ -41,8 +42,28 @@ export default function Students() {
   const handleSave = async () => {
     if (!form.first_name || !form.last_name) return;
     const data = { ...form, student_id: form.student_id || 'STU' + Date.now().toString().slice(-8), qr_id: form.qr_id || 'QR-' + Date.now().toString().slice(-12) };
-    if (editMode) await base44.entities.Student.update(form.id, data);
-    else await base44.entities.Student.create(data);
+    if (editMode) {
+      await base44.entities.Student.update(form.id, data);
+    } else {
+      const student = await base44.entities.Student.create(data);
+      if (form.grade && form.section) {
+        const classes = await base44.entities.Class.filter({ grade_level: form.grade, section: form.section });
+        if (classes[0]) {
+          await base44.entities.Enrollment.create({
+            student_id: student.id, student_name: `${form.first_name} ${form.last_name}`,
+            class_id: classes[0].id, class_name: `${classes[0].grade_level} ${classes[0].section}`,
+            enrollment_date: new Date().toLocaleDateString('en-CA'), status: 'enrolled',
+          });
+        }
+      }
+      if (form.parent_name) {
+        await base44.entities.Guardian.create({
+          student_id: student.id, student_name: `${form.first_name} ${form.last_name}`,
+          name: form.parent_name, contact_number: form.parent_contact, email: form.parent_email, is_primary: true,
+        });
+      }
+      logAudit('create_student', 'Student', student.id, `${form.first_name} ${form.last_name}`);
+    }
     setDrawerOpen(false);
     load();
   };
@@ -61,7 +82,7 @@ export default function Students() {
 
   return (
     <div className="space-y-4">
-      <PageTitle>Student Profile</PageTitle>
+      <PageTitle>Students</PageTitle>
       <PagePanel>
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <KpSelect value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="w-20">

@@ -1,0 +1,31 @@
+{
+  "name": "IDCardTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "template_type": {
+      "type": "string",
+      "enum": [
+        "student",
+        "employee"
+      ],
+      "default": "student"
+    },
+    "primary_color": {
+      "type": "string",
+      "default": "#004D5A"
+    },
+    "expiry_months": {
+      "type": "number",
+      "default": 12
+    },
+    "fields": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

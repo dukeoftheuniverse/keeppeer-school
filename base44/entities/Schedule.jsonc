@@ -28,10 +28,19 @@
     "subject_name": {
       "type": "string"
     },
+    "subject_id": {
+      "type": "string"
+    },
     "teacher_name": {
       "type": "string"
     },
+    "teacher_id": {
+      "type": "string"
+    },
     "room": {
+      "type": "string"
+    },
+    "room_id": {
       "type": "string"
     },
     "schedule_type": {

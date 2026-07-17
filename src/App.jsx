@@ -23,6 +23,7 @@ import GradeSection from '@/pages/GradeSection';
 import ClassDetail from '@/pages/ClassDetail';
 import IDMaker from '@/pages/IDMaker';
 import AttendanceScanner from '@/pages/AttendanceScanner';
+import Reports from '@/pages/Reports';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -67,6 +68,7 @@ const AuthenticatedApp = () => {
           <Route path="/class/:id" element={<ClassDetail />} />
           <Route path="/id-maker" element={<IDMaker />} />
           <Route path="/attendance" element={<AttendanceScanner />} />
+          <Route path="/reports" element={<Reports />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

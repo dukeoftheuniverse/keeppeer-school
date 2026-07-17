@@ -1,0 +1,50 @@
+{
+  "name": "GeneratedIDCard",
+  "type": "object",
+  "properties": {
+    "person_id": {
+      "type": "string"
+    },
+    "person_name": {
+      "type": "string"
+    },
+    "person_type": {
+      "type": "string",
+      "enum": [
+        "student",
+        "employee"
+      ]
+    },
+    "template_id": {
+      "type": "string"
+    },
+    "card_number": {
+      "type": "string"
+    },
+    "qr_code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "issued",
+        "lost",
+        "revoked",
+        "expired"
+      ],
+      "default": "issued"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "person_id",
+    "person_type"
+  ]
+}

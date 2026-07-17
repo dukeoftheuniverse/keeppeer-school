@@ -1,0 +1,39 @@
+{
+  "name": "MedicalRecord",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "blood_type": {
+      "type": "string"
+    },
+    "height": {
+      "type": "string"
+    },
+    "weight": {
+      "type": "string"
+    },
+    "allergies": {
+      "type": "string"
+    },
+    "medications": {
+      "type": "string"
+    },
+    "medical_notes": {
+      "type": "string"
+    },
+    "emergency_contact_name": {
+      "type": "string"
+    },
+    "emergency_contact_number": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id"
+  ]
+}

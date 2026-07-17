@@ -11,6 +11,23 @@
     "lrn": {
       "type": "string"
     },
+    "academic_year_id": {
+      "type": "string"
+    },
+    "school_id": {
+      "type": "string"
+    },
+    "id_card_id": {
+      "type": "string"
+    },
+    "inside_status": {
+      "type": "string",
+      "enum": [
+        "inside",
+        "outside"
+      ],
+      "default": "outside"
+    },
     "first_name": {
       "type": "string"
     },

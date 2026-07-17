@@ -73,7 +73,7 @@ export default function GradeSection() {
 
   return (
     <div className="space-y-4">
-      <PageTitle>Class</PageTitle>
+      <PageTitle>Grade & Section</PageTitle>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={LayoutGrid} label="Total Classes" value={totalClasses} sub="Across all Grades" />

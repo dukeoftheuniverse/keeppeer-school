@@ -38,8 +38,8 @@ export default function UserAccounts() {
   };
 
   const handleDelete = async (acc) => {
-    if (!confirm(`Delete access for ${acc.first_name} ${acc.last_name}?`)) return;
-    await base44.entities.Employee.delete(acc.id);
+    if (!confirm(`Remove system access for ${acc.first_name} ${acc.last_name}? The employee record will be kept.`)) return;
+    await base44.entities.Employee.update(acc.id, { status: 'inactive' });
     setDrawerOpen(false);
     load();
   };

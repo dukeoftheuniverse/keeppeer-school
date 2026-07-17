@@ -1,0 +1,41 @@
+{
+  "name": "Room",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "building": {
+      "type": "string"
+    },
+    "floor": {
+      "type": "string"
+    },
+    "capacity": {
+      "type": "number"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "classroom",
+        "laboratory",
+        "gymnasium",
+        "library",
+        "office"
+      ],
+      "default": "classroom"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "occupied",
+        "maintenance"
+      ],
+      "default": "available"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

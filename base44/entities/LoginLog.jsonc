@@ -1,0 +1,41 @@
+{
+  "name": "LoginLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "device": {
+      "type": "string"
+    },
+    "browser": {
+      "type": "string"
+    },
+    "login_time": {
+      "type": "string"
+    },
+    "logout_time": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed"
+      ],
+      "default": "success"
+    },
+    "failure_reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "username"
+  ]
+}

@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen } from 'lucide-react';
+import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen, FileText } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', path: '/', icon: LayoutDashboard },
   { label: 'School Profile', path: '/school-profile', icon: Building2 },
   { label: 'Account Settings', path: '/account-settings', icon: Settings },
   { label: 'User Accounts', path: '/user-accounts', icon: Users },
-  { label: 'Teachers', path: '/employees', icon: GraduationCap },
+  { label: 'Employees', path: '/employees', icon: GraduationCap },
   { label: 'Students', path: '/students', icon: Contact },
   { label: 'Grade & Section', path: '/classes', icon: ClipboardList },
   { label: 'ID Maker', path: '/id-maker', icon: CreditCard },
-  { label: 'Log Book', path: '/attendance', icon: BookOpen },
+  { label: 'Attendance Logs', path: '/attendance', icon: BookOpen },
+  { label: 'Reports', path: '/reports', icon: FileText },
 ];
 
 export default function Sidebar({ onNavigate }) {

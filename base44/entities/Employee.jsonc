@@ -8,6 +8,12 @@
     "employee_id": {
       "type": "string"
     },
+    "school_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
     "first_name": {
       "type": "string"
     },
@@ -55,6 +61,14 @@
     "hire_date": {
       "type": "string",
       "format": "date"
+    },
+    "inside_status": {
+      "type": "string",
+      "enum": [
+        "inside",
+        "outside"
+      ],
+      "default": "outside"
     }
   },
   "required": [
