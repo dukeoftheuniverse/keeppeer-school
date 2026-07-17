@@ -1,0 +1,62 @@
+{
+  "name": "Attendance",
+  "type": "object",
+  "properties": {
+    "person_id": {
+      "type": "string"
+    },
+    "person_name": {
+      "type": "string"
+    },
+    "person_type": {
+      "type": "string",
+      "enum": [
+        "student",
+        "employee"
+      ]
+    },
+    "scan_type": {
+      "type": "string",
+      "enum": [
+        "time_in",
+        "time_out"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "present",
+        "absent",
+        "late",
+        "excused",
+        "half_day"
+      ],
+      "default": "present"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "qr",
+        "manual"
+      ],
+      "default": "qr"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "time": {
+      "type": "string"
+    },
+    "grade": {
+      "type": "string"
+    },
+    "section": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "person_id",
+    "person_name"
+  ]
+}

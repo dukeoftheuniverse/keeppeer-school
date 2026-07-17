@@ -1,0 +1,64 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "photo_url": {
+      "type": "string"
+    },
+    "employee_id": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "middle_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "access_level": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "teacher",
+        "staff"
+      ],
+      "default": "teacher"
+    },
+    "email": {
+      "type": "string"
+    },
+    "mobile_number": {
+      "type": "string"
+    },
+    "advisory_class": {
+      "type": "string"
+    },
+    "assigned_subjects": {
+      "type": "string"
+    },
+    "hire_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name"
+  ]
+}

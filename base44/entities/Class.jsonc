@@ -1,0 +1,52 @@
+{
+  "name": "Class",
+  "type": "object",
+  "properties": {
+    "academic_year": {
+      "type": "string"
+    },
+    "grade_level": {
+      "type": "string"
+    },
+    "section": {
+      "type": "string"
+    },
+    "adviser_name": {
+      "type": "string"
+    },
+    "adviser_id": {
+      "type": "string"
+    },
+    "room": {
+      "type": "string"
+    },
+    "capacity": {
+      "type": "number"
+    },
+    "enrolled_count": {
+      "type": "number",
+      "default": 0
+    },
+    "session": {
+      "type": "string",
+      "enum": [
+        "Morning",
+        "Afternoon",
+        "Whole Day"
+      ],
+      "default": "Whole Day"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "grade_level",
+    "section"
+  ]
+}

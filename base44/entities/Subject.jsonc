@@ -1,0 +1,47 @@
+{
+  "name": "Subject",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "grade_level": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "teacher_name": {
+      "type": "string"
+    },
+    "teacher_id": {
+      "type": "string"
+    },
+    "class_id": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string",
+      "default": "teal"
+    },
+    "icon": {
+      "type": "string",
+      "default": "BookOpen"
+    },
+    "room": {
+      "type": "string"
+    },
+    "time": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

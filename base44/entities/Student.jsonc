@@ -1,0 +1,115 @@
+{
+  "name": "Student",
+  "type": "object",
+  "properties": {
+    "photo_url": {
+      "type": "string"
+    },
+    "student_id": {
+      "type": "string"
+    },
+    "lrn": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "middle_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "suffix": {
+      "type": "string"
+    },
+    "nickname": {
+      "type": "string"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female"
+      ]
+    },
+    "birth_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "age": {
+      "type": "number"
+    },
+    "nationality": {
+      "type": "string"
+    },
+    "religion": {
+      "type": "string"
+    },
+    "ethnicity": {
+      "type": "string"
+    },
+    "residential_address": {
+      "type": "string"
+    },
+    "permanent_address": {
+      "type": "string"
+    },
+    "grade": {
+      "type": "string"
+    },
+    "section": {
+      "type": "string"
+    },
+    "enrollment_status": {
+      "type": "string",
+      "enum": [
+        "enrolled",
+        "transferred",
+        "archived",
+        "pending"
+      ],
+      "default": "enrolled"
+    },
+    "qr_id": {
+      "type": "string"
+    },
+    "parent_name": {
+      "type": "string"
+    },
+    "parent_contact": {
+      "type": "string"
+    },
+    "parent_email": {
+      "type": "string"
+    },
+    "emergency_contact_name": {
+      "type": "string"
+    },
+    "emergency_contact_number": {
+      "type": "string"
+    },
+    "blood_type": {
+      "type": "string"
+    },
+    "medical_notes": {
+      "type": "string"
+    },
+    "attendance_present": {
+      "type": "number",
+      "default": 0
+    },
+    "attendance_absent": {
+      "type": "number",
+      "default": 0
+    },
+    "attendance_late": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "first_name",
+    "last_name"
+  ]
+}

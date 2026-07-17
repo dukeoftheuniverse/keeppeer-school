@@ -1,12 +1,28 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
-// Add page imports here
+import ProtectedRoute from '@/components/ProtectedRoute';
+import AppLayout from '@/components/layout/AppLayout';
+import Login from '@/pages/Login';
+import Register from '@/pages/Register';
+import ForgotPassword from '@/pages/ForgotPassword';
+import ResetPassword from '@/pages/ResetPassword';
+import Dashboard from '@/pages/Dashboard';
+import SchoolProfile from '@/pages/SchoolProfile';
+import AccountSettings from '@/pages/AccountSettings';
+import UserAccounts from '@/pages/UserAccounts';
+import Employees from '@/pages/Employees';
+import Students from '@/pages/Students';
+import StudentProfile from '@/pages/StudentProfile';
+import GradeSection from '@/pages/GradeSection';
+import ClassDetail from '@/pages/ClassDetail';
+import IDMaker from '@/pages/IDMaker';
+import AttendanceScanner from '@/pages/AttendanceScanner';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -34,7 +50,25 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/school-profile" element={<SchoolProfile />} />
+          <Route path="/account-settings" element={<AccountSettings />} />
+          <Route path="/user-accounts" element={<UserAccounts />} />
+          <Route path="/employees" element={<Employees />} />
+          <Route path="/students" element={<Students />} />
+          <Route path="/student/:id" element={<StudentProfile />} />
+          <Route path="/classes" element={<GradeSection />} />
+          <Route path="/class/:id" element={<ClassDetail />} />
+          <Route path="/id-maker" element={<IDMaker />} />
+          <Route path="/attendance" element={<AttendanceScanner />} />
+        </Route>
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

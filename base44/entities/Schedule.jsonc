@@ -1,0 +1,55 @@
+{
+  "name": "Schedule",
+  "type": "object",
+  "properties": {
+    "class_id": {
+      "type": "string"
+    },
+    "class_name": {
+      "type": "string"
+    },
+    "day": {
+      "type": "string",
+      "enum": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    "start_time": {
+      "type": "string"
+    },
+    "end_time": {
+      "type": "string"
+    },
+    "subject_name": {
+      "type": "string"
+    },
+    "teacher_name": {
+      "type": "string"
+    },
+    "room": {
+      "type": "string"
+    },
+    "schedule_type": {
+      "type": "string",
+      "default": "Regular"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string",
+      "default": "teal"
+    }
+  },
+  "required": [
+    "class_id",
+    "day",
+    "start_time",
+    "end_time"
+  ]
+}

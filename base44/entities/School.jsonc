@@ -1,0 +1,48 @@
+{
+  "name": "School",
+  "type": "object",
+  "properties": {
+    "school_name": {
+      "type": "string"
+    },
+    "school_id": {
+      "type": "string"
+    },
+    "school_type": {
+      "type": "string"
+    },
+    "school_level": {
+      "type": "string"
+    },
+    "division": {
+      "type": "string"
+    },
+    "district": {
+      "type": "string"
+    },
+    "principal": {
+      "type": "string"
+    },
+    "mobile_number": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "academic_year": {
+      "type": "string"
+    },
+    "school_hours": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "school_name"
+  ]
+}
