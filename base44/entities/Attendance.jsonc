@@ -37,7 +37,9 @@
       "type": "string",
       "enum": [
         "qr",
-        "manual"
+        "manual",
+        "facial",
+        "biometric"
       ],
       "default": "qr"
     },
@@ -70,6 +72,9 @@
         "outside"
       ],
       "default": "outside"
+    },
+    "confidence_score": {
+      "type": "number"
     }
   },
   "required": [
