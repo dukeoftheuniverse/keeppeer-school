@@ -160,6 +160,15 @@
   }
 }
 
+/* ===== Soft Frosted glass for all white rounded panels (light mode) ===== */
+.bg-white.rounded-2xl,
+.bg-white.rounded-3xl,
+.bg-white.rounded-xl {
+  background: linear-gradient(135deg, rgba(255,255,255,0.74), rgba(255,255,255,0.54)) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
 /* ===== Dark mode (KeepPeer dashboards) ===== */
 .dark { color-scheme: dark; }
 .dark body { background-color: #08161d; }

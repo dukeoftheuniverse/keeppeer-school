@@ -15,7 +15,7 @@ export default function Drawer({ open, onClose, title, children, width = 'max-w-
   return (
     <div className="fixed inset-0 z-[100] flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn("relative w-full bg-white shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300", width)}>
+      <div className={cn("relative w-full bg-white/85 backdrop-blur-xl saturate-150 shadow-2xl border-l border-white/40 h-full flex flex-col animate-in slide-in-from-right duration-300", width)}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
           <h3 className="text-lg font-bold text-[hsl(var(--kp-teal))]">{title}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
