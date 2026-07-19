@@ -34,7 +34,17 @@ export default function ChatModal({ open, onClose, me, mode, presetContact, stud
         const admins = employees.filter(e => e.access_level === 'admin' || /admin|principal/i.test(e.position || ''));
         const adminContacts = admins.map(a => ({ email: a.email, name: `${a.first_name} ${a.last_name}`, role: 'admin', sub: a.position || 'Administrator' }));
         let list = [];
-        if (mode === 'teacher') {
+        if (mode === 'admin') {
+          const teachers = employees
+            .filter(e => e.email && (e.access_level === 'teacher' || /teacher/i.test(e.position || '')))
+            .map(e => ({ email: e.email, name: `${e.first_name} ${e.last_name}`, role: 'teacher', sub: e.position || 'Teacher' }));
+          const parentMap = new Map();
+          students.forEach(s => {
+            if (s.enrollment_status === 'archived' || !s.parent_email) return;
+            parentMap.set(s.parent_email.toLowerCase(), { email: s.parent_email, name: s.parent_name || s.parent_email, role: 'parent', sub: `Parent of ${s.first_name} ${s.last_name}` });
+          });
+          list = [...teachers, ...parentMap.values()];
+        } else if (mode === 'teacher') {
           const fullName = me.name;
           const ids = new Set();
           classes.forEach(c => { if (c.adviser_id === me.id || c.adviser_name === fullName) ids.add(c.id); });

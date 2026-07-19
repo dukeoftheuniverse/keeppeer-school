@@ -278,6 +278,32 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
+            {/* Today's Class Schedule */}
+            <Card>
+              <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Class Schedule</h3>
+                {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> :
+            <div className="relative pl-6">
+                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
+                    {schedules.map((s) => {
+                const SIcon = subjectIcon(s.subject_name);
+                return (
+                  <div key={s.id} className="relative mb-3 last:mb-0">
+                          <div className="absolute -left-[18px] top-1 w-3.5 h-3.5 rounded-full bg-[#00BCD4] border-2 border-white shadow" />
+                          <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm">
+                            <div className="w-9 h-9 rounded-lg bg-[#E0F7FA] flex items-center justify-center shrink-0"><SIcon className="w-4 h-4 text-[#006064]" /></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-[#004D40] truncate">{s.subject_name}</div>
+                              <div className="text-[11px] text-[#546E7A]">{s.class_name || ''} {s.room ? `• Room ${s.room}` : ''}</div>
+                            </div>
+                            <div className="text-xs font-medium text-[#006064] shrink-0">{s.start_time} - {s.end_time}</div>
+                          </div>
+                        </div>);
+
+              })}
+                  </div>
+            }
+              </Card>
+
             {/* Tabs */}
             <div className="kp-wave-tabs rounded-xl p-1.5 inline-flex gap-1 w-fit">
               {selectedRole === 'advisory' &&
@@ -386,32 +412,6 @@ export default function TeacherDashboard() {
 
           <GradebookPanel classInfo={selectedClass} teacher={employee} role={selectedRole} onStudentClick={(s) => setProfileStudent(s)} />
           }
-
-            {/* Today's Class Schedule */}
-            <Card>
-              <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Class Schedule</h3>
-                {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> :
-            <div className="relative pl-6">
-                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
-                    {schedules.map((s) => {
-                const SIcon = subjectIcon(s.subject_name);
-                return (
-                  <div key={s.id} className="relative mb-3 last:mb-0">
-                          <div className="absolute -left-[18px] top-1 w-3.5 h-3.5 rounded-full bg-[#00BCD4] border-2 border-white shadow" />
-                          <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm">
-                            <div className="w-9 h-9 rounded-lg bg-[#E0F7FA] flex items-center justify-center shrink-0"><SIcon className="w-4 h-4 text-[#006064]" /></div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-[#004D40] truncate">{s.subject_name}</div>
-                              <div className="text-[11px] text-[#546E7A]">{s.class_name || ''} {s.room ? `• Room ${s.room}` : ''}</div>
-                            </div>
-                            <div className="text-xs font-medium text-[#006064] shrink-0">{s.start_time} - {s.end_time}</div>
-                          </div>
-                        </div>);
-
-              })}
-                  </div>
-            }
-              </Card>
           </> :
 
         <Card>

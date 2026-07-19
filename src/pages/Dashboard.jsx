@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { PagePanel, PageTitle, StatusBadge, Avatar } from '@/components/kp/ui';
-import { Users, UserCheck, UserX, Clock, TrendingUp, CloudSun, Shield, Calendar, LogIn, LogOut, Megaphone, Plus } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, TrendingUp, CloudSun, Shield, Calendar, LogIn, LogOut, Megaphone, Plus, RefreshCw, MessageSquare } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import WeatherMonitor from '@/components/kp/WeatherMonitor';
 import AnnouncementList from '@/components/kp/AnnouncementList';
 import AnnouncementModal from '@/components/kp/AnnouncementModal';
+import ChatModal from '@/components/kp/ChatModal';
+import { clearRoleChoice } from '@/pages/DashboardRouter';
 import ThemeToggle from '@/components/kp/ThemeToggle';
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
@@ -55,6 +57,8 @@ export default function Dashboard() {
   const [checkins, setCheckins] = useState([]);
   const [schedule, setSchedule] = useState([]);
   const [showAnnModal, setShowAnnModal] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const chatMe = { id: user?.id, name: user?.full_name || 'Admin', email: user?.email, role: 'admin' };
 
   const loadAnnouncements = () => {
     base44.entities.Announcement.list('-created_date', 10).then(setAnnouncements).catch(() => {});
@@ -111,6 +115,12 @@ export default function Dashboard() {
               <div className="text-[10px] text-gray-400 mt-0.5">Philippine Standard Time</div>
             </div>
           </div>
+          <button onClick={() => { clearRoleChoice(); window.location.href = '/'; }} title="Switch Role" className="w-9 h-9 rounded-full bg-white/70 hover:bg-white text-[hsl(var(--kp-teal))] dark:bg-white/10 dark:text-[#8EE5F0] dark:hover:bg-white/20 flex items-center justify-center transition-colors">
+            <RefreshCw className="w-5 h-5" />
+          </button>
+          <button onClick={() => setShowChat(true)} title="Messages" className="w-9 h-9 rounded-full bg-white/70 hover:bg-white text-[hsl(var(--kp-teal))] dark:bg-white/10 dark:text-[#8EE5F0] dark:hover:bg-white/20 flex items-center justify-center transition-colors">
+            <MessageSquare className="w-5 h-5" />
+          </button>
           <ThemeToggle />
         </div>
       </div>
@@ -273,6 +283,7 @@ export default function Dashboard() {
       </PagePanel>
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} user={user} />
+      <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="admin" />
     </div>
   );
 }
