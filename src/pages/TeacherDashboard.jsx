@@ -8,6 +8,7 @@ import AnnouncementModal from '@/components/kp/AnnouncementModal';
 import StudentProfileView from '@/components/kp/StudentProfileView';
 import AddStudentModal from '@/components/kp/AddStudentModal';
 import SyncClassModal from '@/components/kp/SyncClassModal';
+import GradebookModal from '@/components/kp/GradebookModal';
 import { logAudit } from '@/lib/audit';
 import {
   ClipboardList, GraduationCap, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon,
@@ -51,6 +52,7 @@ export default function TeacherDashboard() {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showSyncClass, setShowSyncClass] = useState(false);
+  const [showGradebook, setShowGradebook] = useState(false);
   const [tab, setTab] = useState('attendance'); // attendance | grades
 
   // grades state
@@ -227,7 +229,10 @@ export default function TeacherDashboard() {
 
             {/* My Classroom */}
             <SectionBar icon={GraduationCap} label="My Classroom" action={
-              <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
+              <div className="flex gap-1.5">
+                <button onClick={() => setShowGradebook(true)} disabled={!selectedClass} className="text-xs font-medium text-white bg-[#16A34A] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105 disabled:opacity-50"><ClipboardList className="w-3.5 h-3.5" /> Gradebook</button>
+                <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
+              </div>
             } />
             {myClasses.length === 0 ? (
               <Card><p className="text-sm text-gray-400 text-center py-6">No classes linked yet. Use "Sync Class" to link classes you teach or advise.</p></Card>
@@ -456,6 +461,7 @@ export default function TeacherDashboard() {
 
       <AddStudentModal open={showAddStudent} onClose={() => setShowAddStudent(false)} onAdded={() => selectedClass && selectClass(selectedClass)} classInfo={selectedClass} />
       <SyncClassModal open={showSyncClass} onClose={() => setShowSyncClass(false)} onLinked={() => load()} teacher={employee} />
+      <GradebookModal open={showGradebook} onClose={() => setShowGradebook(false)} classInfo={selectedClass} teacher={employee} role={selectedRole} />
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} defaultAudience="class" defaultClass={selectedClass ? `${selectedClass.grade_level} - ${selectedClass.section}` : ''} user={user} />
     </div>

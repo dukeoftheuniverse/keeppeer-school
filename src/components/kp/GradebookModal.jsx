@@ -1,0 +1,159 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { X, Loader2, Save, Award, ClipboardList, Lock } from 'lucide-react';
+
+const ACTIVITIES = ['Quiz', 'Summative Test', 'Activity', 'Project', 'Exam'];
+
+export default function GradebookModal({ open, onClose, classInfo, teacher, role }) {
+  const [students, setStudents] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ student_id: '', subject: '', activity: 'Quiz', score: '', total: 100, date: new Date().toLocaleDateString('en-CA') });
+
+  const load = async () => {
+    if (!classInfo) return;
+    setLoading(true);
+    const [allStudents, subs, allGrades] = await Promise.all([
+      base44.entities.Student.list().catch(() => []),
+      base44.entities.ClassSubject.filter({ class_id: classInfo.id }).catch(() => []),
+      base44.entities.Grade.filter({ class_id: classInfo.id }).catch(() => []),
+    ]);
+    const studs = allStudents.filter(s => s.grade === classInfo.grade_level && s.section === classInfo.section && s.enrollment_status === 'enrolled');
+    setStudents(studs);
+    const fullName = teacher ? `${teacher.first_name} ${teacher.last_name}` : '';
+    const allowed = role === 'subject'
+      ? subs.filter(s => s.teacher_id === teacher?.id || s.teacher_name === fullName)
+      : subs;
+    const subjList = allowed.map(s => s.subject_name).filter(Boolean);
+    setSubjects(subjList);
+    setGrades(allGrades);
+    setForm(f => ({ ...f, student_id: f.student_id || studs[0]?.id || '', subject: f.subject || subjList[0] || '' }));
+    setLoading(false);
+  };
+
+  useEffect(() => { if (open) load(); }, [open, classInfo?.id]);
+
+  if (!open || !classInfo) return null;
+
+  const avgFor = (studentId, subject) => {
+    const recs = grades.filter(g => g.student_id === studentId && g.subject_name === subject);
+    if (!recs.length) return null;
+    const pcts = recs.map(g => g.total ? (g.score / g.total) * 100 : 0);
+    return Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
+  };
+
+  const rowAvg = (studentId) => {
+    const vals = subjects.map(s => avgFor(studentId, s)).filter(v => v != null);
+    if (!vals.length) return null;
+    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+  };
+
+  const save = async () => {
+    if (!form.student_id || !form.subject || !form.activity) return;
+    setSaving(true);
+    const stu = students.find(s => s.id === form.student_id);
+    await base44.entities.Grade.create({
+      student_id: form.student_id,
+      student_name: `${stu.first_name} ${stu.last_name}`,
+      class_id: classInfo.id,
+      class_name: `${classInfo.grade_level} - ${classInfo.section}`,
+      subject_name: form.subject,
+      activity_type: form.activity,
+      teacher_id: teacher?.id,
+      teacher_name: teacher ? `${teacher.first_name} ${teacher.last_name}` : '',
+      quarter: 'Q1',
+      score: Number(form.score) || 0,
+      total: Number(form.total) || 100,
+      date: form.date,
+      visible_to_parent: true,
+    });
+    const allGrades = await base44.entities.Grade.filter({ class_id: classInfo.id }).catch(() => []);
+    setGrades(allGrades);
+    setForm(f => ({ ...f, score: '' }));
+    setSaving(false);
+  };
+
+  const pctColor = (p) => p == null ? 'text-gray-300' : p >= 90 ? 'text-green-600' : p >= 75 ? 'text-[#1E3A8A]' : 'text-red-600';
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-4xl p-5 max-h-[88vh] flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="w-6 h-6 text-[#16A34A]" />
+            <div>
+              <h3 className="text-lg font-bold text-[hsl(var(--kp-teal))]">Gradebook — {classInfo.grade_level} - {classInfo.section}</h3>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className={`px-2 py-0.5 rounded font-semibold ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
+                {role === 'subject' && <span className="text-gray-500 flex items-center gap-1"><Lock className="w-3 h-3" /> You can only enter scores for your assigned subjects</span>}
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-400"><X className="w-4 h-4" /></button>
+        </div>
+
+        {/* Add score form */}
+        <div className="bg-[#E8F9FB] rounded-xl p-3 mb-4">
+          <div className="text-xs font-semibold text-[#0F766E] mb-2 flex items-center gap-1.5"><Award className="w-3.5 h-3.5" /> Record a Score</div>
+          {subjects.length === 0 ? (
+            <p className="text-xs text-gray-500 py-2">{role === 'subject' ? 'You have no assigned subjects for this class. Ask the admin to assign you, or sync your class.' : 'No subjects added to this classroom yet.'}</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+              <select value={form.student_id} onChange={e => setForm({ ...form, student_id: e.target.value })} className="sm:col-span-2 px-2.5 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+                <option value="">Select student</option>
+                {students.map(s => <option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}
+              </select>
+              <select value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+                <option value="">Subject</option>
+                {subjects.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select value={form.activity} onChange={e => setForm({ ...form, activity: e.target.value })} className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+                {ACTIVITIES.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+              <input type="number" value={form.score} onChange={e => setForm({ ...form, score: e.target.value })} placeholder="Score" className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm" />
+              <input type="number" value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} placeholder="Total" className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm" />
+              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm col-span-2 sm:col-span-1" />
+              <button onClick={save} disabled={saving || !form.student_id || !form.subject} className="sm:col-span-6 px-4 py-2 rounded-full bg-[#16A34A] text-white text-sm font-semibold hover:brightness-105 disabled:opacity-50 flex items-center justify-center gap-1.5">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Score
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Matrix */}
+        {loading ? <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[hsl(var(--kp-teal))] animate-spin" /></div> :
+          students.length === 0 ? <p className="text-sm text-gray-400 text-center py-8">No enrolled students in this classroom.</p> : (
+            <div className="flex-1 overflow-auto kp-scroll-thin">
+              <table className="w-full text-sm border-collapse min-w-[600px]">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left py-2 px-2 font-medium text-xs text-gray-400 sticky left-0 bg-white">Student</th>
+                    {subjects.map(s => <th key={s} className="text-center py-2 px-2 font-medium text-xs text-gray-400 min-w-[90px]">{s}</th>)}
+                    <th className="text-center py-2 px-2 font-medium text-xs text-[hsl(var(--kp-teal))]">Avg</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map(s => (
+                    <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                      <td className="py-2 px-2 sticky left-0 bg-white">
+                        <div className="text-sm font-medium text-[hsl(var(--kp-teal))] truncate">{s.first_name} {s.last_name}</div>
+                      </td>
+                      {subjects.map(sub => {
+                        const p = avgFor(s.id, sub);
+                        return <td key={sub} className="text-center py-2 px-2"><span className={`text-sm font-bold ${pctColor(p)}`}>{p == null ? '—' : `${p}%`}</span></td>;
+                      })}
+                      <td className="text-center py-2 px-2"><span className={`text-sm font-bold ${pctColor(rowAvg(s.id))}`}>{rowAvg(s.id) == null ? '—' : `${rowAvg(s.id)}%`}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        <div className="text-[11px] text-gray-400 mt-2">Cell values show the average of recorded scores per subject. Detailed per-student scores live in the Score Board (click a student name).</div>
+      </div>
+    </div>
+  );
+}
