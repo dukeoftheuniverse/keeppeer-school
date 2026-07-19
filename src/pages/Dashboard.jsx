@@ -19,7 +19,7 @@ function StatCard({ icon: Icon, label, value, sub, color }) {
       </div>
       <div className="min-w-0">
         <div className="text-2xl font-bold text-[hsl(var(--kp-teal))] leading-none">{value}</div>
-        <div className="text-xs text-gray-500 mt-0.5 truncate">{label}</div>
+        <div className="text-xs mt-0.5 truncate text-[hsl(var(--foreground))]">{label}</div>
         {sub && <div className="text-[10px] text-gray-400 mt-0.5">{sub}</div>}
       </div>
     </div>);
@@ -32,11 +32,11 @@ function InOutCard({ title, inside, outside, total }) {
       <div className="text-sm font-semibold text-[hsl(var(--kp-teal))] mb-3">{title}</div>
       <div className="flex items-center gap-3">
         <div className="flex-1">
-          <div className="text-xs text-gray-400">Inside</div>
+          <div className="text-xs text-[hsl(var(--foreground))]">Inside</div>
           <div className="text-xl font-bold text-[hsl(var(--kp-green))]">{inside}</div>
         </div>
         <div className="flex-1">
-          <div className="text-xs text-gray-400">Outside</div>
+          <div className="text-xs text-[hsl(var(--foreground))]">Outside</div>
           <div className="text-xl font-bold text-[hsl(var(--foreground))]">{outside}</div>
         </div>
         <div className="flex-1">
