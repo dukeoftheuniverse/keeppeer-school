@@ -60,10 +60,10 @@ export default function SchoolProfile() {
           </KpSelect>
         </div>
 
-        <div className="flex gap-2 mb-6">
-          <button onClick={() => setTab('details')} className={`px-4 py-1.5 rounded-lg text-sm font-medium ${tab === 'details' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>School Details</button>
-          <button onClick={() => setTab('hours')} className={`px-4 py-1.5 rounded-lg text-sm font-medium ${tab === 'hours' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>School Hours</button>
-          <button onClick={() => setTab('academic')} className={`px-4 py-1.5 rounded-lg text-sm font-medium ${tab === 'academic' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>Academic Year</button>
+        <div className="flex gap-2 mb-6 overflow-x-auto kp-no-scrollbar">
+          <button onClick={() => setTab('details')} className="whitespace-nowrap" className={`px-4 py-1.5 rounded-lg text-sm font-medium ${tab === 'details' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>School Details</button>
+          <button onClick={() => setTab('hours')} className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap ${tab === 'hours' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>School Hours</button>
+          <button onClick={() => setTab('academic')} className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap ${tab === 'academic' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>Academic Year</button>
         </div>
 
         {tab === 'details' && (

@@ -354,9 +354,9 @@ export default function AttendanceScanner() {
               <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Search person..." className="mb-3" />
               <div className="space-y-2 max-h-80 overflow-y-auto kp-scroll-thin">
                 {filteredPeople.map(p => (
-                  <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg border border-gray-100">
-                    <div className="flex items-center gap-2"><Avatar name={p.name} src={p.photo_url} size="w-8 h-8" /><div><div className="text-sm font-medium text-gray-700">{p.name}</div><div className="text-xs text-gray-400 capitalize">{p.type} {p.grade && `• ${p.grade}`} {p.inside_status === 'inside' && '• Inside'}</div></div></div>
-                    <div className="flex gap-1">
+                  <div key={p.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2.5 rounded-lg border border-gray-100">
+                    <div className="flex items-center gap-2 min-w-0"><Avatar name={p.name} src={p.photo_url} size="w-8 h-8" /><div className="min-w-0"><div className="text-sm font-medium text-gray-700 truncate">{p.name}</div><div className="text-xs text-gray-400 capitalize">{p.type} {p.grade && `• ${p.grade}`} {p.inside_status === 'inside' && '• Inside'}</div></div></div>
+                    <div className="flex gap-1 shrink-0">
                       <button onClick={() => handleManualAttendance(p, 'present')} className="px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-medium hover:bg-green-200">Present</button>
                       <button onClick={() => handleManualAttendance(p, 'absent')} className="px-2.5 py-1 rounded-md bg-red-100 text-red-700 text-xs font-medium hover:bg-red-200">Absent</button>
                       <button onClick={() => handleManualAttendance(p, 'late')} className="px-2.5 py-1 rounded-md bg-orange-100 text-orange-700 text-xs font-medium hover:bg-orange-200">Late</button>
