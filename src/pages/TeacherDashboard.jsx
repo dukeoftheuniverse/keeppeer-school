@@ -314,8 +314,8 @@ export default function TeacherDashboard() {
                               <div onClick={(e) => { e.stopPropagation(); setProfileStudent(s); }} className="cursor-pointer rounded-full ring-2 ring-transparent hover:ring-[#00BCD4] transition" title="View profile">
                                 <Avatar name={`${s.first_name} ${s.last_name}`} src={s.photo_url} />
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-[#004D40] truncate">{s.first_name} {s.last_name} {s.suffix || ''}</div>
+                              <div className="flex-1 min-w-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); setProfileStudent(s); }} title="View profile — scoreboard & attendance history">
+                                <div className="text-sm font-semibold text-[#004D40] truncate hover:underline decoration-[#00BCD4] decoration-2 underline-offset-2">{s.first_name} {s.last_name} {s.suffix || ''}</div>
                                 <div className="text-[11px] text-[#546E7A] font-mono">{s.lrn || s.student_id || '—'}</div>
                               </div>
                               <span className={`w-2.5 h-2.5 rounded-full ${mk === 'present' ? 'bg-green-500' : mk === 'late' ? 'bg-orange-500' : mk === 'absent' ? 'bg-red-500' : 'bg-gray-300'}`} />
@@ -425,8 +425,9 @@ export default function TeacherDashboard() {
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} defaultAudience="class" defaultClass={selectedClass ? `${selectedClass.grade_level} - ${selectedClass.section}` : ''} user={user} />
 
-      <button onClick={() => setShowChat(true)} className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#00838F] text-white shadow-lg flex items-center justify-center hover:brightness-105" title="Messages">
-        <MessageSquare className="w-6 h-6" />
+      <button onClick={() => setShowChat(true)} className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 h-12 pl-3.5 pr-5 rounded-full bg-[#00838F] text-white shadow-lg hover:brightness-105" title="Messages">
+        <MessageSquare className="w-5 h-5" />
+        <span className="text-sm font-semibold">Messages</span>
       </button>
       <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="teacher" />
     </div>
