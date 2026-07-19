@@ -32,12 +32,12 @@ export default function ChatModal({ open, onClose, me, mode, presetContact, stud
           base44.entities.Message.list('-created_date', 500).catch(() => []),
         ]);
         const admins = employees.filter(e => e.access_level === 'admin' || /admin|principal/i.test(e.position || ''));
-        const adminContacts = admins.map(a => ({ email: a.email, name: `${a.first_name} ${a.last_name}`, role: 'admin', sub: a.position || 'Administrator' }));
+        const adminContacts = admins.map(a => ({ email: a.email, name: `${a.first_name} ${a.last_name}`, role: 'admin', sub: a.position || 'Administrator', photo: a.photo_url }));
         let list = [];
         if (mode === 'admin') {
           const teachers = employees
             .filter(e => e.email && (e.access_level === 'teacher' || /teacher/i.test(e.position || '')))
-            .map(e => ({ email: e.email, name: `${e.first_name} ${e.last_name}`, role: 'teacher', sub: e.position || 'Teacher' }));
+            .map(e => ({ email: e.email, name: `${e.first_name} ${e.last_name}`, role: 'teacher', sub: e.position || 'Teacher', photo: e.photo_url }));
           const parentMap = new Map();
           students.forEach(s => {
             if (s.enrollment_status === 'archived' || !s.parent_email) return;
@@ -65,12 +65,12 @@ export default function ChatModal({ open, onClose, me, mode, presetContact, stud
           const teacherMap = new Map();
           childClasses.forEach(c => {
             const adv = employees.find(e => e.id === c.adviser_id || c.adviser_name === `${e.first_name} ${e.last_name}`);
-            if (adv && adv.email) teacherMap.set(adv.id, { email: adv.email, name: `${adv.first_name} ${adv.last_name}`, role: 'teacher', sub: `Adviser, ${c.grade_level} - ${c.section}` });
+            if (adv && adv.email) teacherMap.set(adv.id, { email: adv.email, name: `${adv.first_name} ${adv.last_name}`, role: 'teacher', sub: `Adviser, ${c.grade_level} - ${c.section}`, photo: adv.photo_url });
           });
           classSubs.forEach(cs => {
             if (!childClassIds.has(cs.class_id)) return;
             const t = employees.find(e => e.id === cs.teacher_id || cs.teacher_name === `${e.first_name} ${e.last_name}`);
-            if (t && t.email) teacherMap.set(t.id, { email: t.email, name: `${t.first_name} ${t.last_name}`, role: 'teacher', sub: `Subject: ${cs.subject_name}` });
+            if (t && t.email) teacherMap.set(t.id, { email: t.email, name: `${t.first_name} ${t.last_name}`, role: 'teacher', sub: `Subject: ${cs.subject_name}`, photo: t.photo_url });
           });
           list = [...teacherMap.values(), ...adminContacts];
         }
@@ -159,9 +159,12 @@ export default function ChatModal({ open, onClose, me, mode, presetContact, stud
                 const un = unreadFor(c);
                 return (
                   <button key={c.email} onClick={() => setActive(c)} className={`w-full text-left p-2.5 rounded-lg transition-all ${active?.email === c.email ? 'bg-[hsl(var(--kp-teal))] text-white' : 'hover:bg-white'}`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm font-semibold truncate ${active?.email === c.email ? '' : 'text-[hsl(var(--kp-teal))]'}`}>{c.name}</span>
-                      {un > 0 && <span className="ml-1.5 shrink-0 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{un}</span>}
+                    <div className="flex items-center gap-2">
+                      <ChatAvatar name={c.name} src={c.photo} active={active?.email === c.email} />
+                      <div className="flex-1 min-w-0 flex items-center justify-between">
+                        <span className={`text-sm font-semibold truncate ${active?.email === c.email ? '' : 'text-[hsl(var(--kp-teal))]'}`}>{c.name}</span>
+                        {un > 0 && <span className="ml-1.5 shrink-0 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">{un}</span>}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${active?.email === c.email ? 'bg-white/20 text-white' : roleBadge(c.role)}`}>{c.role}</span>
@@ -179,6 +182,7 @@ export default function ChatModal({ open, onClose, me, mode, presetContact, stud
             <>
               <div className="p-3 border-b border-gray-100 flex items-center gap-2">
                 <button onClick={() => setActive(null)} className="sm:hidden text-[hsl(var(--kp-teal))]"><ArrowLeft className="w-4 h-4" /></button>
+                <ChatAvatar name={active.name} src={active.photo} size="w-10 h-10" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold text-[hsl(var(--kp-teal))] truncate">{active.name}</div>
                   <div className="flex items-center gap-1.5"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${roleBadge(active.role)}`}>{active.role}</span><span className="text-[11px] text-gray-400 truncate">{active.sub}</span></div>
@@ -216,4 +220,10 @@ export default function ChatModal({ open, onClose, me, mode, presetContact, stud
       </div>
     </div>
   );
+}
+
+function ChatAvatar({ name, src, size = 'w-9 h-9', active = false }) {
+  const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+  if (src) return <img src={src} alt={name} className={`${size} rounded-full object-cover shrink-0 ring-2 ${active ? 'ring-white/40' : 'ring-transparent'}`} />;
+  return <div className={`${size} rounded-full ${active ? 'bg-white/20 text-white' : 'bg-[#B2EBF2] text-[#006064]'} flex items-center justify-center text-xs font-semibold shrink-0`}>{initials}</div>;
 }
