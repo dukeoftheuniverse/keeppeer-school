@@ -8,6 +8,7 @@ import AnnouncementModal from '@/components/kp/AnnouncementModal';
 import StudentProfileView from '@/components/kp/StudentProfileView';
 import AddStudentModal from '@/components/kp/AddStudentModal';
 import SyncClassModal from '@/components/kp/SyncClassModal';
+import ScheduleModal from '@/components/kp/ScheduleModal';
 import GradebookPanel from '@/components/kp/GradebookPanel';
 import { logAudit } from '@/lib/audit';
 import { printHTML } from '@/lib/print';
@@ -54,6 +55,7 @@ export default function TeacherDashboard() {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showSyncClass, setShowSyncClass] = useState(false);
+  const [showSchedModal, setShowSchedModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [tab, setTab] = useState('attendance'); // attendance | grades
 
@@ -222,6 +224,15 @@ export default function TeacherDashboard() {
     }).catch(() => {});
   };
 
+  const reloadSchedules = () => {
+    if (!employee) return;
+    const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const fullName = `${employee.first_name} ${employee.last_name}`;
+    base44.entities.Schedule.filter({ day: dayName }).then((all) => {
+      setSchedules(all.filter((s) => s.teacher_id === employee.id || s.teacher_name === fullName));
+    }).catch(() => {});
+  };
+
   if (loading) return <div className="kp-dash-bg min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#00838F] animate-spin" /></div>;
 
   const teacherName = employee ? `${employee.first_name}` : user?.full_name?.split(' ')[0] || 'Teacher';
@@ -232,11 +243,48 @@ export default function TeacherDashboard() {
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
         {employee ?
         <>
-            {/* My Classroom — full width top */}
+            {/* Today's Class Schedule + Announcements — equal columns, above My Classroom */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-bold text-[#004D40] flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Class Schedule</h3>
+                  <button onClick={() => setShowSchedModal(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><Plus className="w-3.5 h-3.5" /> Add Schedule</button>
+                </div>
+                {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> :
+                <div className="relative pl-6">
+                  <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
+                  {schedules.map((s) => {
+                    const SIcon = subjectIcon(s.subject_name);
+                    return (
+                      <div key={s.id} className="relative mb-3 last:mb-0">
+                        <div className="absolute -left-[18px] top-1 w-3.5 h-3.5 rounded-full bg-[#00BCD4] border-2 border-white shadow" />
+                        <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm">
+                          <div className="w-9 h-9 rounded-lg bg-[#E0F7FA] flex items-center justify-center shrink-0"><SIcon className="w-4 h-4 text-[#006064]" /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-[#004D40] truncate">{s.subject_name}</div>
+                            <div className="text-[11px] text-[#546E7A]">{s.class_name || ''} {s.room ? `• Room ${s.room}` : ''}</div>
+                          </div>
+                          <div className="text-xs font-medium text-[#006064] shrink-0">{s.start_time} - {s.end_time}</div>
+                        </div>
+                      </div>);
+                  })}
+                </div>}
+              </Card>
+
+              <Card>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-bold text-[#004D40] flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> Announcements</h3>
+                  <button onClick={() => setShowAnnModal(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><Plus className="w-3.5 h-3.5" /> Record</button>
+                </div>
+                <AnnouncementList announcements={announcements} maxHeight="240px" />
+              </Card>
+            </div>
+
+            {/* My Classroom — full width */}
             <div className="space-y-4">
               <SectionBar icon={GraduationCap} label="My Classroom" action={
-            <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
-            } />
+              <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
+              } />
             {myClasses.length === 0 ?
             <Card><p className="text-sm text-gray-400 text-center py-6">No classes linked yet. Use "Sync Class" to link classes you teach or advise.</p></Card> :
             <div className="flex gap-3 overflow-x-auto kp-scroll-thin pb-2">
@@ -251,55 +299,19 @@ export default function TeacherDashboard() {
                 const bc = borderColors[idx % borderColors.length];
                 return (
                   <button key={c.id} onClick={() => selectClass(item)} className={`bg-white rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all text-2xl ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#004D40] bg-[#E0F7FA] px-2 py-0.5 rounded">Grade {c.grade_level}</span>
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
-                      </div>
-                      <div className="text-sm font-bold text-[#004D40] mt-1.5">{c.section}</div>
-                      <div className="text-xs text-[#546E7A] mt-1">{count}/{c.capacity || '—'} Students</div>
-                      {role === 'subject' && item.subjectName && <div className="text-[11px] font-semibold text-[#FF8F00] mt-1.5 truncate">{item.subjectName}</div>}
-                      {first && <div className="text-[11px] font-semibold text-[#00838F] mt-1.5 truncate">{first.subject_name}</div>}
-                      {first && <div className="text-[11px] text-[#546E7A] flex items-center gap-1"><Clock className="w-3 h-3" /> {first.start_time} - {first.end_time}</div>}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#004D40] bg-[#E0F7FA] px-2 py-0.5 rounded">Grade {c.grade_level}</span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
+                    </div>
+                    <div className="text-sm font-bold text-[#004D40] mt-1.5">{c.section}</div>
+                    <div className="text-xs text-[#546E7A] mt-1">{count}/{c.capacity || '—'} Students</div>
+                    {role === 'subject' && item.subjectName && <div className="text-[11px] font-semibold text-[#FF8F00] mt-1.5 truncate">{item.subjectName}</div>}
+                    {first && <div className="text-[11px] font-semibold text-[#00838F] mt-1.5 truncate">{first.subject_name}</div>}
+                    {first && <div className="text-[11px] text-[#546E7A] flex items-center gap-1"><Clock className="w-3 h-3" /> {first.start_time} - {first.end_time}</div>}
                     </button>);
               })}
               </div>
-            }
-            </div>
-
-            {/* Today's Class Schedule + Announcements side by side */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">
-                <Card>
-                  <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Class Schedule</h3>
-                  {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> :
-                <div className="relative pl-6">
-                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
-                    {schedules.map((s) => {
-                    const SIcon = subjectIcon(s.subject_name);
-                    return (
-                      <div key={s.id} className="relative mb-3 last:mb-0">
-                          <div className="absolute -left-[18px] top-1 w-3.5 h-3.5 rounded-full bg-[#00BCD4] border-2 border-white shadow" />
-                          <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm">
-                            <div className="w-9 h-9 rounded-lg bg-[#E0F7FA] flex items-center justify-center shrink-0"><SIcon className="w-4 h-4 text-[#006064]" /></div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-[#004D40] truncate">{s.subject_name}</div>
-                              <div className="text-[11px] text-[#546E7A]">{s.class_name || ''} {s.room ? `• Room ${s.room}` : ''}</div>
-                            </div>
-                            <div className="text-xs font-medium text-[#006064] shrink-0">{s.start_time} - {s.end_time}</div>
-                          </div>
-                        </div>);
-                  })}
-                  </div>}
-                </Card>
-              </div>
-
-              {/* Announcements (right) */}
-              <div className="lg:col-span-1">
-                <Card className="lg:sticky lg:top-4">
-                  <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> Announcements</h3>
-                  <AnnouncementList announcements={announcements} onAdd={() => setShowAnnModal(true)} addLabel="Record Announcement" maxHeight="240px" />
-                </Card>
-              </div>
+              }
             </div>
 
             {/* Tabs */}
@@ -437,6 +449,7 @@ export default function TeacherDashboard() {
       <SyncClassModal open={showSyncClass} onClose={() => setShowSyncClass(false)} onLinked={() => load()} teacher={employee} />
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} defaultAudience="class" defaultClass={selectedClass ? `${selectedClass.grade_level} - ${selectedClass.section}` : ''} user={user} />
+      <ScheduleModal open={showSchedModal} onClose={() => setShowSchedModal(false)} onSaved={reloadSchedules} teacher={employee} presetClass={selectedClass} />
 
       <button onClick={() => setShowChat(true)} className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 h-12 pl-3.5 pr-5 rounded-full bg-[#00838F] text-white shadow-lg hover:brightness-105" title="Messages">
         <MessageSquare className="w-5 h-5" />
