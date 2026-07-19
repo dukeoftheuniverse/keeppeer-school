@@ -17,6 +17,17 @@
     "subject_name": {
       "type": "string"
     },
+    "activity_type": {
+      "type": "string",
+      "enum": [
+        "Quiz",
+        "Summative Test",
+        "Activity",
+        "Project",
+        "Exam"
+      ],
+      "description": "Type of assessment recorded"
+    },
     "teacher_id": {
       "type": "string"
     },
@@ -46,6 +57,11 @@
     "date": {
       "type": "string",
       "format": "date"
+    },
+    "visible_to_parent": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether this score is visible to the parent dashboard"
     }
   },
   "required": [

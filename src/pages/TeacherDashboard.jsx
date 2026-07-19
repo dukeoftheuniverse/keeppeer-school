@@ -219,6 +219,12 @@ export default function TeacherDashboard() {
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
         {employee ? (
           <>
+            {/* Announcements */}
+            <Card>
+              <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> Announcements</h3>
+              <AnnouncementList announcements={announcements} onAdd={() => setShowAnnModal(true)} addLabel="Record Announcement" maxHeight="220px" />
+            </Card>
+
             {/* My Classroom */}
             <SectionBar icon={GraduationCap} label="My Classroom" action={
               <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
@@ -400,10 +406,9 @@ export default function TeacherDashboard() {
               </Card>
             )}
 
-            {/* Schedule + Announcements */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card className="lg:col-span-2">
-                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Class Schedule</h3>
+            {/* Today's Class Schedule */}
+            <Card>
+              <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Class Schedule</h3>
                 {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> : (
                   <div className="relative pl-6">
                     <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
@@ -426,12 +431,6 @@ export default function TeacherDashboard() {
                   </div>
                 )}
               </Card>
-
-              <Card>
-                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> Announcements</h3>
-                <AnnouncementList announcements={announcements} onAdd={() => setShowAnnModal(true)} addLabel="Record Announcement" maxHeight="320px" />
-              </Card>
-            </div>
           </>
         ) : (
           <Card>

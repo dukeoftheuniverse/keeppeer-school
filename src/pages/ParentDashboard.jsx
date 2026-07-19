@@ -67,7 +67,7 @@ export default function ParentDashboard() {
   useEffect(() => {
     if (!selected) return;
     base44.entities.Attendance.filter({ person_id: selected.id }).then(setAttendance).catch(() => setAttendance([]));
-    base44.entities.Grade.filter({ student_id: selected.id }).then(setGrades).catch(() => setGrades([]));
+    base44.entities.Grade.filter({ student_id: selected.id }).then(all => setGrades(all.filter(g => g.visible_to_parent !== false))).catch(() => setGrades([]));
     const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     base44.entities.Schedule.filter({ day: dayName }).then(all => {
       setSchedules(all.filter(s => s.class_name?.includes(selected.grade) && s.class_name?.includes(selected.section)));
@@ -118,6 +118,18 @@ export default function ParentDashboard() {
               <Clock className="w-3.5 h-3.5" /> {timeStr}, {dateStr}
             </div>
           </div>
+        </div>
+
+        {/* Announcements */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card>
+            <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> School Announcement</h3>
+            <AnnouncementList announcements={schoolAnn} maxHeight="220px" emptyMessage="No school announcements" />
+          </Card>
+          <Card>
+            <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-[#006064]" /> Class Announcement</h3>
+            <AnnouncementList announcements={classAnn} maxHeight="220px" emptyMessage="No class announcements" />
+          </Card>
         </div>
 
         {/* My Student picker */}
@@ -300,19 +312,7 @@ export default function ParentDashboard() {
               )}
             </Card>
 
-            {/* Announcements */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Card>
-                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> School Announcement</h3>
-                <AnnouncementList announcements={schoolAnn} maxHeight="220px" emptyMessage="No school announcements" />
-                <button className="mt-2 text-xs font-medium text-[#006064] hover:underline flex items-center gap-1">View All Announcements <ChevronRight className="w-3.5 h-3.5" /></button>
-              </Card>
-              <Card>
-                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-[#006064]" /> Class Announcement</h3>
-                <AnnouncementList announcements={classAnn} maxHeight="220px" emptyMessage="No class announcements" />
-                <button className="mt-2 text-xs font-medium text-[#006064] hover:underline flex items-center gap-1">View All Announcements <ChevronRight className="w-3.5 h-3.5" /></button>
-              </Card>
-            </div>
+            {/* Announcements moved to top */}
           </>
         )}
       </main>

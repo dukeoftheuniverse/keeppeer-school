@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
   Award, Plus, Trash2, BookOpen, ClipboardList, Calendar, X, BadgeCheck,
-  ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap
+  ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap, Eye, EyeOff
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
@@ -54,17 +54,25 @@ export default function StudentProfileView({ student, school, classInfo, teacher
       student_name: `${student.first_name} ${student.last_name}`,
       class_id: classInfo?.id,
       class_name: classInfo ? `${classInfo.grade_level} - ${classInfo.section}` : '',
-      subject_name: activity.trim(),
+      subject_name: subjectName || activity.trim(),
+      activity_type: activity.trim(),
       teacher_id: teacher?.id,
       teacher_name: teacher ? `${teacher.first_name} ${teacher.last_name}` : '',
       quarter: 'Q1',
       score: Number(score) || 0,
       total: Number(total) || 100,
       date,
+      visible_to_parent: true,
     });
     setActivity(''); setScore(''); setTotal(100);
     await reload();
     setSaving(false);
+  };
+
+  const toggleVisible = async (g) => {
+    const newVal = g.visible_to_parent === false;
+    await base44.entities.Grade.update(g.id, { visible_to_parent: newVal });
+    await reload();
   };
 
   const deleteGrade = async (id) => { await base44.entities.Grade.delete(id); await reload(); };
@@ -170,40 +178,56 @@ export default function StudentProfileView({ student, school, classInfo, teacher
           <div className="p-5">
             {tab === 'score' ? (
               <div>
-                <h3 className="text-sm font-bold text-[#004D40] mb-3 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-[#00838F]" /> Score Board</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-3">
-                  <div className="sm:col-span-1">
-                    <label className="text-[11px] text-[#546E7A] font-medium">Activity</label>
-                    <input value={activity} onChange={e => setActivity(e.target.value)} placeholder="Short Quiz" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] text-[#546E7A] font-medium">Score</label>
-                    <input type="number" value={score} onChange={e => setScore(e.target.value)} placeholder="40" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] text-[#546E7A] font-medium">Total</label>
-                    <input type="number" value={total} onChange={e => setTotal(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] text-[#546E7A] font-medium">Date</label>
-                    <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm" />
-                  </div>
+                <div className="flex items-center gap-2 mb-4">
+                  <ClipboardList className="w-7 h-7 text-[#16A34A]" />
+                  <h3 className="text-2xl font-bold text-[#16A34A]">Score board</h3>
                 </div>
-                <button onClick={saveScore} disabled={saving || !activity.trim()} className="px-4 py-2 rounded-lg bg-[#00C853] text-white text-sm font-medium hover:brightness-105 disabled:opacity-50 flex items-center gap-1.5">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Score
-                </button>
 
-                <div className="mt-4 space-y-2">
+                <div className="bg-[#E8F9FB] rounded-2xl p-4 space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-[#0F766E] block mb-1">Activity</label>
+                    <select value={activity} onChange={e => setActivity(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20">
+                      <option value="">Select activity...</option>
+                      <option>Quiz</option>
+                      <option>Summative Test</option>
+                      <option>Activity</option>
+                      <option>Project</option>
+                      <option>Exam</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-sm font-medium text-[#0F766E] block mb-1">Score</label>
+                      <input type="number" value={score} onChange={e => setScore(e.target.value)} placeholder="40" className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-[#0F766E] block mb-1">Total</label>
+                      <input type="number" value={total} onChange={e => setTotal(e.target.value)} placeholder="50" className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-[#0F766E] block mb-1">Date</label>
+                      <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm" />
+                    </div>
+                  </div>
+                  <button onClick={saveScore} disabled={saving || !activity} className="w-full py-2.5 rounded-full bg-[#16A34A] text-white text-sm font-semibold hover:brightness-105 disabled:opacity-50 flex items-center justify-center gap-1.5">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Score
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-2.5">
                   {grades.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No scores recorded yet.</p> :
                     grades.map(g => (
-                      <div key={g.id} className="bg-[#E0F7FA] rounded-xl px-3 py-2.5 flex items-center justify-between">
+                      <div key={g.id} className="bg-[#CBEAF4] rounded-xl px-4 py-3 flex items-center justify-between">
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold text-[#004D40] truncate">{g.subject_name}</div>
-                          <div className="text-[11px] text-[#546E7A]">{g.date ? new Date(g.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}</div>
+                          <div className="text-sm font-bold text-[#1E3A8A] truncate">{g.activity_type || g.subject_name}</div>
+                          <div className="text-xs text-[#374151]">{g.date ? new Date(g.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}</div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-sm font-bold text-[#00838F]">{g.score}/{g.total}</span>
-                          <button onClick={() => deleteGrade(g.id)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                          <span className="text-sm font-bold text-[#1F2937]">{g.score}/{g.total}</span>
+                          <button onClick={() => toggleVisible(g)} title={g.visible_to_parent === false ? 'Hidden from parents' : 'Visible to parents'} className={`hover:text-[#0F766E] ${g.visible_to_parent === false ? 'text-gray-300' : 'text-[#0F766E]'}`}>
+                            {g.visible_to_parent === false ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                          <button onClick={() => deleteGrade(g.id)} className="text-[#6B7280] hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </div>
                     ))}
