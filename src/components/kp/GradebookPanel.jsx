@@ -154,29 +154,29 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
         if (graded.length === 0) return <p className="text-sm text-gray-400 text-center py-8">No grades recorded yet. Student names appear here once scores are entered.</p>;
         return (
           <div className="overflow-auto kp-scroll-thin">
-            <table className="w-full text-sm border-collapse min-w-[600px] hidden">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left py-2 px-2 font-medium text-xs text-gray-400 sticky left-0 bg-white hidden">Student</th>
-                  {subjects.map((s) => <th key={s} className="text-center py-2 px-2 font-medium text-xs text-gray-400 min-w-[90px]">{s}</th>)}
-                  <th className="text-center py-2 px-2 font-medium text-xs text-[hsl(var(--kp-teal))]">Avg</th>
-                </tr>
-              </thead>
-              <tbody>
-                {graded.map((s) =>
-                <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                    <td className="py-2 px-2 sticky left-0 bg-white hidden">
-                      <button onClick={() => onStudentClick?.(s)} className="text-sm font-medium text-[hsl(var(--kp-teal))] truncate hover:underline text-left" title="View grade history">{s.first_name} {s.last_name}</button>
-                    </td>
-                    {subjects.map((sub) => {
-                    const p = avgFor(s.id, sub);
-                    return <td key={sub} className="text-center py-2 px-2"><span className={`text-sm font-bold ${pctColor(p)}`}>{p == null ? '—' : `${p}%`}</span></td>;
-                  })}
-                    <td className="text-center py-2 px-2 hidden"><span className={`text-sm font-bold ${pctColor(rowAvg(s.id))}`}>{rowAvg(s.id) == null ? '—' : `${rowAvg(s.id)}%`}</span></td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
           </div>);
 
       })()}
