@@ -6,7 +6,6 @@ import WeatherMonitor from '@/components/kp/WeatherMonitor';
 import AnnouncementList from '@/components/kp/AnnouncementList';
 import AnnouncementModal from '@/components/kp/AnnouncementModal';
 import StudentProfileView from '@/components/kp/StudentProfileView';
-import ManageClassModal from '@/components/kp/ManageClassModal';
 import AddStudentModal from '@/components/kp/AddStudentModal';
 import { logAudit } from '@/lib/audit';
 import {
@@ -47,7 +46,6 @@ export default function TeacherDashboard() {
   const [announcements, setAnnouncements] = useState([]);
   const [showAnnModal, setShowAnnModal] = useState(false);
   const [profileStudent, setProfileStudent] = useState(null);
-  const [showManageClass, setShowManageClass] = useState(false);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [tab, setTab] = useState('attendance'); // attendance | grades
 
@@ -194,7 +192,7 @@ export default function TeacherDashboard() {
           <>
             {/* My Classroom */}
             <SectionBar icon={GraduationCap} label="My Classroom" action={
-              <button onClick={() => setShowManageClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><Plus className="w-3.5 h-3.5" /> Add Class</button>
+              <span className="text-[11px] font-medium text-white/85 bg-white/15 px-2.5 py-1 rounded-lg flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Synced from Admin</span>
             } />
             {myClasses.length === 0 ? (
               <Card><p className="text-sm text-gray-400 text-center py-6">No advisory classes assigned yet. Contact the administrator.</p></Card>
@@ -222,11 +220,6 @@ export default function TeacherDashboard() {
                 })}
               </div>
             )}
-            <div className="flex justify-center mt-2">
-              <button onClick={() => setShowManageClass(true)} className="px-5 py-2.5 rounded-lg bg-[#00838F] text-white text-sm font-semibold hover:brightness-105 shadow flex items-center gap-1.5">
-                <Plus className="w-4 h-4" /> Manage Class
-              </button>
-            </div>
 
             {/* Tabs */}
             <div className="flex gap-1.5 bg-white/70 rounded-xl p-1 w-fit">
@@ -426,7 +419,6 @@ export default function TeacherDashboard() {
         />
       )}
 
-      <ManageClassModal open={showManageClass} onClose={() => setShowManageClass(false)} onCreated={() => load()} teacher={employee} school={school} />
       <AddStudentModal open={showAddStudent} onClose={() => setShowAddStudent(false)} onAdded={() => selectedClass && selectClass(selectedClass)} classInfo={selectedClass} />
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} defaultAudience="class" defaultClass={selectedClass ? `${selectedClass.grade_level} - ${selectedClass.section}` : ''} user={user} />
