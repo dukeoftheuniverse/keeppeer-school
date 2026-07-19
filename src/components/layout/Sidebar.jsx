@@ -5,24 +5,24 @@ import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, Cl
 import { clearRoleChoice } from '@/pages/DashboardRouter';
 
 const navItems = [
-  { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-  { label: 'School Profile', path: '/school-profile', icon: Building2 },
-  { label: 'Account Settings', path: '/account-settings', icon: Settings },
-  { label: 'User Accounts', path: '/user-accounts', icon: Users },
-  { label: 'Faculty & Staff', path: '/employees', icon: GraduationCap },
-  { label: 'Students', path: '/students', icon: Contact },
-  { label: 'Classrooms', path: '/classes', icon: ClipboardList },
-  { label: 'ID Maker', path: '/id-maker', icon: CreditCard },
-  { label: 'Attendance', path: '/attendance', icon: BookOpen },
-  { label: 'Reports', path: '/reports', icon: FileText },
-];
+{ label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+{ label: 'School Profile', path: '/school-profile', icon: Building2 },
+{ label: 'Account Settings', path: '/account-settings', icon: Settings },
+{ label: 'User Accounts', path: '/user-accounts', icon: Users },
+{ label: 'Faculty & Staff', path: '/employees', icon: GraduationCap },
+{ label: 'Students', path: '/students', icon: Contact },
+{ label: 'Classrooms', path: '/classes', icon: ClipboardList },
+{ label: 'ID Maker', path: '/id-maker', icon: CreditCard },
+{ label: 'Attendance', path: '/attendance', icon: BookOpen },
+{ label: 'Reports', path: '/reports', icon: FileText }];
+
 
 export default function Sidebar({ onNavigate }) {
   const [school, setSchool] = useState(null);
   const [attendanceOpen, setAttendanceOpen] = useState(true);
 
   useEffect(() => {
-    base44.entities.School.list().then(res => setSchool(res[0] || null)).catch(() => {});
+    base44.entities.School.list().then((res) => setSchool(res[0] || null)).catch(() => {});
   }, []);
 
   return (
@@ -42,42 +42,42 @@ export default function Sidebar({ onNavigate }) {
         <div className="text-white/70 text-[10px] mt-0.5">Academic Year {school?.academic_year || '2026-2027'}</div>
       </div>
 
-      <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2 mb-1.5 flex items-center gap-1">
+      <div className="text-[10px] font-semibold uppercase tracking-wider px-2 mb-1.5 flex items-center gap-1 text-[#001029]">
         <Building2 className="w-3 h-3" /> My School
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto kp-scroll-thin -mr-1 pr-1">
-        {navItems.map(item => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/admin'}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? 'bg-[hsl(var(--kp-teal))] text-white shadow-sm'
-                  : 'text-[hsl(var(--kp-teal))] hover:bg-[hsl(var(--accent))]'
-              }`
-            }
-          >
+        {navItems.map((item) =>
+        <NavLink
+          key={item.path}
+          to={item.path}
+          end={item.path === '/admin'}
+          onClick={onNavigate}
+          className={({ isActive }) =>
+          `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+          isActive ?
+          'bg-[hsl(var(--kp-teal))] text-white shadow-sm' :
+          'text-[hsl(var(--kp-teal))] hover:bg-[hsl(var(--accent))]'}`
+
+          }>
+          
             <item.icon className="w-4 h-4 shrink-0" />
             <span className="truncate">{item.label}</span>
           </NavLink>
-        ))}
+        )}
       </nav>
 
       <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between px-1">
         <span className="text-sm font-medium text-[hsl(var(--kp-teal))]">Attendance</span>
         <button
           onClick={() => setAttendanceOpen(!attendanceOpen)}
-          className={`relative w-11 h-6 rounded-full transition-colors ${attendanceOpen ? 'bg-[hsl(var(--kp-green))]' : 'bg-gray-300'}`}
-        >
+          className={`relative w-11 h-6 rounded-full transition-colors ${attendanceOpen ? 'bg-[hsl(var(--kp-green))]' : 'bg-gray-300'}`}>
+          
           <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${attendanceOpen ? 'translate-x-5' : ''}`} />
           <span className={`absolute top-0.5 text-[9px] font-semibold transition-all ${attendanceOpen ? 'left-1.5 text-[hsl(var(--kp-green))]' : 'left-5 text-gray-400'}`}>
             {attendanceOpen ? 'ON' : ''}
           </span>
         </button>
       </div>
-    </div>
-  );
+    </div>);
+
 }
