@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, StatusBadge, Avatar, SearchInput, Pagination, EmptyState, KpSelect } from '@/components/kp/ui';
 import Drawer from '@/components/kp/Drawer';
@@ -6,6 +7,7 @@ import ActionMenu from '@/components/kp/ActionMenu';
 import { UserPlus, Pencil, Trash2, Eye, Calendar, Upload } from 'lucide-react';
 
 export default function Employees() {
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -90,7 +92,7 @@ export default function Employees() {
                       <div className="flex items-center gap-2.5">
                         <Avatar name={`${emp.first_name} ${emp.last_name}`} src={emp.photo_url} />
                         <div>
-                          <div className="font-medium text-gray-700">{emp.first_name} {emp.last_name}</div>
+                          <button onClick={() => navigate(`/employee/${emp.id}`)} className="font-medium text-gray-700 hover:text-[hsl(var(--kp-teal))] hover:underline text-left">{emp.first_name} {emp.last_name}</button>
                           <div className="text-xs text-gray-400">{emp.department || '—'}</div>
                         </div>
                       </div>
@@ -100,9 +102,10 @@ export default function Employees() {
                     <td className="py-3 px-2 hidden sm:table-cell"><StatusBadge status={emp.status} /></td>
                     <td className="py-3 px-2 text-right">
                       <ActionMenu items={[
+                        { label: 'View Profile', icon: Eye, onClick: () => navigate(`/employee/${emp.id}`) },
                         { label: 'Edit', icon: Pencil, onClick: () => openEdit(emp) },
                         { label: 'View Schedule', icon: Calendar, onClick: () => {} },
-                        { label: 'Attendance History', icon: Eye, onClick: () => {} },
+                        { label: 'Attendance History', icon: Calendar, onClick: () => navigate(`/employee/${emp.id}`) },
                         { label: 'Delete', icon: Trash2, onClick: () => handleDelete(emp), className: 'text-[hsl(var(--kp-red))]' },
                       ]} />
                     </td>

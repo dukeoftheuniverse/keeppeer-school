@@ -12,7 +12,7 @@ const navItems = [
   { label: 'Students', path: '/students', icon: Contact },
   { label: 'Grade & Section', path: '/classes', icon: ClipboardList },
   { label: 'ID Maker', path: '/id-maker', icon: CreditCard },
-  { label: 'Attendance Logs', path: '/attendance', icon: BookOpen },
+  { label: 'Attendance', path: '/attendance', icon: BookOpen },
   { label: 'Reports', path: '/reports', icon: FileText },
 ];
 

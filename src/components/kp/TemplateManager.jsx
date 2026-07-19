@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, KpButton, StatusBadge, EmptyState } from '@/components/kp/ui';
-import { Plus, MoreVertical, Upload, Info, Pencil, Trash2, Check, Loader2, Image as ImageIcon, RotateCcw, RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { Plus, MoreVertical, Upload, Info, Pencil, Trash2, Check, Loader2, Image as ImageIcon, RotateCcw, RectangleHorizontal, RectangleVertical, LayoutTemplate } from 'lucide-react';
 import { logAudit } from '@/lib/audit';
 import { IDCardFront, IDCardBack } from '@/components/kp/IDCardPreview';
+import TemplateDesigner from '@/components/kp/TemplateDesigner';
 
 const SAMPLE_LOGO = 'https://media.base44.com/images/public/6a599666b848d4d07cd0e975/af88c433d_generated_image.png';
 
@@ -51,6 +52,8 @@ export default function TemplateManager() {
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState(null);
   const [applying, setApplying] = useState(null);
+  const [designing, setDesigning] = useState(null);
+  const [school, setSchool] = useState(null);
   const fileInputRef = useRef(null);
 
   const load = async () => {
@@ -90,7 +93,11 @@ export default function TemplateManager() {
     } catch (e) { setBackgrounds(SAMPLE_BACKGROUNDS); }
   };
 
-  useEffect(() => { load(); loadBackgrounds(); }, []);
+  useEffect(() => {
+    load();
+    loadBackgrounds();
+    base44.entities.School.list().then(res => setSchool(res[0] || null)).catch(() => {});
+  }, []);
 
   const filtered = templates.filter(t =>
     (tab === 'student' ? t.template_type === 'student' : t.template_type === 'employee') &&
@@ -139,6 +146,31 @@ export default function TemplateManager() {
   const handleEdit = (tpl) => {
     setMenuOpen(null);
     setEditing(tpl);
+  };
+
+  const handleDesign = (tpl) => {
+    setMenuOpen(null);
+    setDesigning(tpl);
+  };
+
+  const handleSaveDesign = async (data) => {
+    if (designing) {
+      await base44.entities.IDCardTemplate.update(designing.id, {
+        name: data.name,
+        orientation: data.orientation,
+        primary_color: data.primary_color,
+        accent_color: data.accent_color,
+        font_color: data.font_color,
+        header_font: data.header_font,
+        body_font: data.body_font,
+        logo_url: data.logo_url,
+        background_url: data.background_url,
+        layout: data.layout,
+      });
+      logAudit('design_template', 'IDCardTemplate', designing.id, `Designed ${data.name} layout`);
+    }
+    setDesigning(null);
+    load();
   };
 
   const handleSaveEdit = async (data) => {
@@ -274,6 +306,7 @@ export default function TemplateManager() {
                           {applying === tpl.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Apply
                         </button>
                       )}
+                      <button onClick={() => handleDesign(tpl)} className="px-2 py-1.5 rounded-lg text-[11px] font-medium border border-[hsl(var(--kp-teal))]/30 text-[hsl(var(--kp-teal))] hover:bg-[hsl(var(--accent))] flex items-center gap-1"><LayoutTemplate className="w-3 h-3" /> Design</button>
                       <button onClick={() => handleEdit(tpl)} className="px-2 py-1.5 rounded-lg text-[11px] font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 flex items-center gap-1"><Pencil className="w-3 h-3" /> Edit</button>
                       <button onClick={() => setMenuOpen(menuOpen === tpl.id ? null : tpl.id)}
                         className="px-2 py-1.5 rounded-lg text-gray-400 hover:bg-gray-100">
@@ -348,6 +381,7 @@ export default function TemplateManager() {
 
       {showCreate && <CreateTemplateModal tab={tab} onClose={() => setShowCreate(false)} onCreate={handleCreate} backgrounds={backgrounds} />}
       {editing && <CreateTemplateModal tab={tab} template={editing} onClose={() => setEditing(null)} onCreate={handleSaveEdit} backgrounds={backgrounds} />}
+      {designing && <TemplateDesigner template={designing} school={school} tab={tab} onClose={() => setDesigning(null)} onSave={handleSaveDesign} />}
     </div>
   );
 }

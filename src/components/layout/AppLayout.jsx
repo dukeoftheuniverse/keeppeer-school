@@ -7,7 +7,7 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="kp-wave-bg min-h-screen flex">
+    <div className="kp-site-bg min-h-screen flex">
       <div className="hidden lg:flex w-[260px] shrink-0 p-3">
         <Sidebar />
       </div>

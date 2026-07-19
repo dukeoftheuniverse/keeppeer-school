@@ -3,6 +3,81 @@ import { GraduationCap, User } from 'lucide-react';
 
 const QR_BASE = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=';
 
+function tryParseLayout(template) {
+  if (!template?.layout) return null;
+  try {
+    const obj = typeof template.layout === 'string' ? JSON.parse(template.layout) : template.layout;
+    if (obj && typeof obj === 'object' && Object.keys(obj).length) return obj;
+  } catch (e) { /* */ }
+  return null;
+}
+
+function LayoutCardFront({ person, school, cardNumber, template }) {
+  const els = tryParseLayout(template);
+  if (!els) return null;
+  const color = template?.primary_color || '#004D5A';
+  const bg = template?.background_url;
+  const logo = template?.logo_url || school?.logo_url;
+  const isLandscape = (template?.orientation || 'landscape') === 'landscape';
+  const aspect = isLandscape ? '1.585/1' : '1/1.585';
+  const schoolName = template?.school_name_override || school?.school_name || 'KeepPeer Elementary School';
+  const typeBadge = person?.type === 'employee' ? 'Staff' : 'Student';
+  const qrData = person.qr_id || person.lrn || person.employee_id || cardNumber || 'KEEPPEER';
+  const bodyFont = template?.body_font || 'Inter';
+  const headerFont = template?.header_font || 'Inter';
+
+  const textFor = (key) => {
+    if (key === 'schoolName') return schoolName;
+    if (key === 'name') return person?.name || '—';
+    if (key === 'grade') return person?.type === 'student' ? `${person.grade || '—'} - ${person.section || '—'}` : (person.position || '—');
+    if (key === 'idNumber') return cardNumber || (person?.type === 'student' ? person.lrn : person.employee_id) || '—';
+    if (key === 'footer') return template?.footer_text || '';
+    return '';
+  };
+
+  const renderEl = (key) => {
+    const el = els[key];
+    if (!el || el.visible === false) return null;
+    const style = { position: 'absolute', left: `${el.x}%`, top: `${el.y}%`, width: `${el.w}%`, height: `${el.h}%`, boxSizing: 'border-box' };
+    if (key === 'logo' || key === 'photo' || key === 'qr') {
+      const radius = el.shape === 'square' ? '8%' : '50%';
+      let src;
+      if (key === 'logo') src = logo;
+      else if (key === 'qr') src = QR_BASE + encodeURIComponent(qrData);
+      else src = person?.photo_url;
+      return (
+        <div key={key} style={{ ...style, overflow: 'hidden' }}>
+          {src ? <img src={src} className="w-full h-full object-cover" style={{ borderRadius: radius }} /> : (
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center" style={{ borderRadius: radius }}><User className="w-1/2 h-1/2 text-gray-300" /></div>
+          )}
+        </div>
+      );
+    }
+    const isHeader = key === 'schoolName';
+    const text = textFor(key);
+    return (
+      <div key={key} style={{ ...style, display: 'flex', alignItems: 'center', justifyContent: el.align === 'center' ? 'center' : el.align === 'right' ? 'flex-end' : 'flex-start' }}>
+        <span style={{
+          fontSize: `calc(${el.fontSize}px * 0.72)`,
+          color: el.color || (isHeader ? '#ffffff' : '#1f2937'),
+          fontWeight: el.bold ? 700 : 400,
+          fontStyle: el.italic ? 'italic' : 'normal',
+          fontFamily: el.font || (isHeader ? headerFont : bodyFont),
+          textTransform: isHeader ? 'uppercase' : 'none',
+          letterSpacing: isHeader ? '0.05em' : '0',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.1,
+        }}>{text}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full rounded-2xl shadow-xl overflow-hidden border border-gray-100 relative" style={{ aspectRatio: aspect, background: bg ? `url(${bg}) center/cover` : `linear-gradient(135deg, ${color}, ${color}dd)` }}>
+      {['logo', 'schoolName', 'photo', 'name', 'grade', 'idNumber', 'qr', 'footer'].map(renderEl)}
+    </div>
+  );
+}
+
 function resolve(template) {
   return {
     color: template?.primary_color || '#004D5A',
@@ -40,6 +115,7 @@ function QrBlock({ qrData, size = 'w-16 h-16' }) {
 
 export function IDCardFront({ person, school, cardNumber, template }) {
   const cfg = resolve(template);
+  if (tryParseLayout(template)) return <LayoutCardFront person={person} school={school} cardNumber={cardNumber} template={template} />;
   const color = cfg.color;
   const accent = cfg.accent;
   const logo = cfg.logo || school?.logo_url;

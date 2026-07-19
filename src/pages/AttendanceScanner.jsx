@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, StatusBadge, Avatar, SearchInput, EmptyState } from '@/components/kp/ui';
-import { Camera, QrCode, ScanFace, Fingerprint, LogIn, LogOut, UserCheck, UserX, Clock, WifiOff, RefreshCw, BookOpen, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Camera, QrCode, ScanFace, Fingerprint, LogIn, LogOut, UserCheck, UserX, Clock, WifiOff, RefreshCw, BookOpen, AlertTriangle, CheckCircle2, GraduationCap } from 'lucide-react';
 import { logAudit, createNotification } from '@/lib/audit';
 import FacialScanner from '@/components/kp/FacialScanner';
 import BiometricScanner from '@/components/kp/BiometricScanner';
@@ -28,6 +28,7 @@ export default function AttendanceScanner() {
   const [logbook, setLogbook] = useState([]);
   const [tab, setTab] = useState('scanner');
   const [method, setMethod] = useState('qr'); // qr, facial, biometric
+  const [typeFilter, setTypeFilter] = useState('all'); // all, student, employee
   const [scanResult, setScanResult] = useState(null);
   const [scanError, setScanError] = useState(null);
   const videoRef = useRef(null);
@@ -249,7 +250,11 @@ export default function AttendanceScanner() {
   const studentsIn = allPeople.filter(p => p.type === 'student' && p.inside_status === 'inside').length;
   const teachersIn = allPeople.filter(p => p.type === 'employee' && p.inside_status === 'inside').length;
 
-  const filteredPeople = allPeople.filter(p => p.name.toLowerCase().includes(search.toLowerCase())).slice(0, 10);
+  const filteredPeople = allPeople.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) &&
+    (typeFilter === 'all' || p.type === typeFilter)
+  ).slice(0, 10);
+  const filteredLogbook = typeFilter === 'all' ? logbook : logbook.filter(a => a.person_type === typeFilter);
   const tabs = [
     { id: 'scanner', label: 'Scanner' },
     { id: 'manual', label: 'Manual' },
@@ -258,13 +263,14 @@ export default function AttendanceScanner() {
 
   return (
     <div className="space-y-4">
-      <PageTitle>Attendance Logs</PageTitle>
+      <PageTitle>Attendance</PageTitle>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard icon={UserCheck} label="Present Today" value={present} color="bg-[hsl(var(--kp-green))]" />
         <StatCard icon={UserX} label="Absent Today" value={absent} color="bg-[hsl(var(--kp-red))]" />
         <StatCard icon={Clock} label="Late Today" value={late} color="bg-[hsl(var(--kp-orange))]" />
         <StatCard icon={LogIn} label="Students Inside" value={studentsIn} color="bg-[hsl(var(--kp-teal))]" />
+        <StatCard icon={GraduationCap} label="Teachers Inside" value={teachersIn} color="bg-[hsl(var(--kp-aqua))]" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -340,6 +346,11 @@ export default function AttendanceScanner() {
           {tab === 'manual' && (
             <div>
               <p className="text-sm text-gray-500 mb-3">Manually mark attendance for students or employees.</p>
+              <div className="flex gap-1.5 mb-3">
+                {[{ id: 'all', label: 'All' }, { id: 'student', label: 'Students' }, { id: 'employee', label: 'Teachers' }].map(t => (
+                  <button key={t.id} onClick={() => setTypeFilter(t.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${typeFilter === t.id ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>{t.label}</button>
+                ))}
+              </div>
               <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Search person..." className="mb-3" />
               <div className="space-y-2 max-h-80 overflow-y-auto kp-scroll-thin">
                 {filteredPeople.map(p => (
@@ -357,23 +368,30 @@ export default function AttendanceScanner() {
           )}
 
           {tab === 'logbook' && (
-            <div className="overflow-x-auto">
-              {logbook.length === 0 ? <EmptyState message="No attendance records" /> : (
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b border-gray-100 text-xs text-gray-400"><th className="text-left py-2 px-2 font-medium">Name</th><th className="text-left py-2 px-2 font-medium">Type</th><th className="text-left py-2 px-2 font-medium">Status</th><th className="text-left py-2 px-2 font-medium">Method</th><th className="text-right py-2 px-2 font-medium">Date/Time</th></tr></thead>
-                  <tbody>
-                    {logbook.map(a => (
-                      <tr key={a.id} className="border-b border-gray-50">
-                        <td className="py-2 px-2"><div className="flex items-center gap-2"><Avatar name={a.person_name} size="w-7 h-7" /><span className="font-medium text-gray-700">{a.person_name}</span></div></td>
-                        <td className="py-2 px-2 text-gray-500 capitalize">{a.person_type}</td>
-                        <td className="py-2 px-2"><StatusBadge status={a.status} /></td>
-                        <td className="py-2 px-2 text-gray-500 capitalize">{a.method}</td>
-                        <td className="py-2 px-2 text-right text-gray-500 text-xs">{a.date} {a.time}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+            <div>
+              <div className="flex gap-1.5 mb-3">
+                {[{ id: 'all', label: 'All Records' }, { id: 'student', label: 'Students' }, { id: 'employee', label: 'Teachers' }].map(t => (
+                  <button key={t.id} onClick={() => setTypeFilter(t.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium ${typeFilter === t.id ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}>{t.label}</button>
+                ))}
+              </div>
+              <div className="overflow-x-auto">
+                {filteredLogbook.length === 0 ? <EmptyState message="No attendance records" /> : (
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b border-gray-100 text-xs text-gray-400"><th className="text-left py-2 px-2 font-medium">Name</th><th className="text-left py-2 px-2 font-medium">Type</th><th className="text-left py-2 px-2 font-medium">Status</th><th className="text-left py-2 px-2 font-medium">Method</th><th className="text-right py-2 px-2 font-medium">Date/Time</th></tr></thead>
+                    <tbody>
+                      {filteredLogbook.map(a => (
+                        <tr key={a.id} className="border-b border-gray-50">
+                          <td className="py-2 px-2"><div className="flex items-center gap-2"><Avatar name={a.person_name} size="w-7 h-7" /><span className="font-medium text-gray-700">{a.person_name}</span></div></td>
+                          <td className="py-2 px-2 text-gray-500 capitalize">{a.person_type}</td>
+                          <td className="py-2 px-2"><StatusBadge status={a.status} /></td>
+                          <td className="py-2 px-2 text-gray-500 capitalize">{a.method}</td>
+                          <td className="py-2 px-2 text-right text-gray-500 text-xs">{a.date} {a.time}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           )}
         </PagePanel>

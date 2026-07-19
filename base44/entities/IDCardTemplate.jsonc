@@ -33,6 +33,14 @@
       "type": "string",
       "default": "#1f2937"
     },
+    "header_font": {
+      "type": "string",
+      "default": "Inter"
+    },
+    "body_font": {
+      "type": "string",
+      "default": "Inter"
+    },
     "footer_text": {
       "type": "string",
       "default": "Be Respectful. Be Responsible. Be a KeepPeer."
@@ -76,6 +84,10 @@
     },
     "fields": {
       "type": "string"
+    },
+    "layout": {
+      "type": "string",
+      "description": "JSON string of element positions/sizes (x,y,w,h in %, font, color) for the Canva-like designer"
     },
     "is_default": {
       "type": "boolean",

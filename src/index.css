@@ -127,4 +127,13 @@
   .kp-no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  .kp-site-bg {
+    background-color: #46b8c9;
+    background-image: url('https://media.base44.com/images/public/6a599666b848d4d07cd0e975/61afd6dc5_image.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+  }
 }

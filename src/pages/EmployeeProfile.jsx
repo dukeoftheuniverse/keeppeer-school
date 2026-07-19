@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, KpButton, KpInput, KpSelect, StatusBadge, Avatar } from '@/components/kp/ui';
+import EmployeeDTR from '@/components/kp/EmployeeDTR';
 import { Upload, Save, User, AlertTriangle, GraduationCap, Briefcase, IdCard, Gift, Wallet, Calendar, ArrowLeft, QrCode } from 'lucide-react';
 
 const sections = [
@@ -195,28 +196,7 @@ export default function EmployeeProfile() {
               </>
             )}
             {active === 'attendance' && (
-              <>
-                <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-4 flex items-center gap-2"><Calendar className="w-4 h-4" /> Attendance History</h3>
-                {attendance.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-8">No attendance records</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead><tr className="border-b border-gray-100 text-xs text-gray-400"><th className="text-left py-2 px-2 font-medium">Date</th><th className="text-left py-2 px-2 font-medium">Time</th><th className="text-left py-2 px-2 font-medium">Type</th><th className="text-left py-2 px-2 font-medium">Status</th></tr></thead>
-                      <tbody>
-                        {attendance.map(a => (
-                          <tr key={a.id} className={`border-b border-gray-50 ${a.scan_type === 'time_in' ? 'bg-gray-50/40' : ''}`}>
-                            <td className="py-2 px-2 text-gray-600">{a.date}</td>
-                            <td className="py-2 px-2 text-gray-600">{a.time || '—'}</td>
-                            <td className="py-2 px-2 text-gray-600 capitalize">{a.scan_type === 'time_in' ? 'Campus checked in' : 'Campus checked out'}</td>
-                            <td className="py-2 px-2"><StatusBadge status={a.status} /></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
+              <EmployeeDTR employee={employee} attendance={attendance} />
             )}
 
             {active !== 'attendance' && (
