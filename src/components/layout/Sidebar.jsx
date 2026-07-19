@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen, FileText } from 'lucide-react';
+import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen, FileText, RefreshCw } from 'lucide-react';
+import { clearRoleChoice } from '@/pages/DashboardRouter';
 
 const navItems = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
@@ -64,6 +65,14 @@ export default function Sidebar({ onNavigate }) {
           </NavLink>
         ))}
       </nav>
+
+      <button
+        onClick={() => { clearRoleChoice(); window.location.href = '/'; }}
+        className="mt-3 w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-[hsl(var(--kp-teal))] hover:bg-[hsl(var(--accent))] transition-all"
+      >
+        <RefreshCw className="w-4 h-4 shrink-0" />
+        <span>Switch Role</span>
+      </button>
 
       <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between px-1">
         <span className="text-sm font-medium text-[hsl(var(--kp-teal))]">Attendance</span>

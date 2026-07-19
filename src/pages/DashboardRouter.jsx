@@ -5,27 +5,37 @@ import TeacherDashboard from '@/pages/TeacherDashboard';
 import ParentDashboard from '@/pages/ParentDashboard';
 import RoleSelect from '@/pages/RoleSelect';
 
-const STORAGE_KEY = 'kp_selected_role';
+const PERM_KEY = 'kp_role_permanent';
+const SESSION_KEY = 'kp_selected_role';
+const ROLES = ['admin', 'teacher', 'parent'];
 
-// Shows a role-selection landing screen on domain entry, then routes to the
-// matching dashboard. The choice is kept for the browser session so navigation
-// within the app doesn't re-prompt, but a fresh visit asks again.
+// Clears both the permanent and session role choice — used by "Switch Role".
+export function clearRoleChoice() {
+  localStorage.removeItem(PERM_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
+}
+
 export default function DashboardRouter() {
-  const { user, isLoadingAuth } = useAuth();
-  const [role, setRole] = useState(null); // admin | teacher | parent
+  const { isLoadingAuth } = useAuth();
+  const [role, setRole] = useState(null);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     if (isLoadingAuth) return;
-    const saved = sessionStorage.getItem(STORAGE_KEY);
-    if (saved && ['admin', 'teacher', 'parent'].includes(saved)) {
-      setRole(saved);
-    }
+    const perm = localStorage.getItem(PERM_KEY);
+    if (perm && ROLES.includes(perm)) { setRole(perm); setChecking(false); return; }
+    const sess = sessionStorage.getItem(SESSION_KEY);
+    if (sess && ROLES.includes(sess)) setRole(sess);
     setChecking(false);
   }, [isLoadingAuth]);
 
-  const handleSelect = (chosen) => {
-    sessionStorage.setItem(STORAGE_KEY, chosen);
+  const handleSelect = (chosen, remember) => {
+    if (remember) {
+      localStorage.setItem(PERM_KEY, chosen);
+      sessionStorage.removeItem(SESSION_KEY);
+    } else {
+      sessionStorage.setItem(SESSION_KEY, chosen);
+    }
     setRole(chosen);
   };
 
@@ -33,11 +43,9 @@ export default function DashboardRouter() {
     return <div className="flex items-center justify-center py-12"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>;
   }
 
-  // No selection yet (or explicitly cleared) → show the role picker
   if (!role) return <RoleSelect onSelect={handleSelect} />;
 
   if (role === 'teacher') return <TeacherDashboard />;
   if (role === 'parent') return <ParentDashboard />;
-  // Admin → main admin dashboard (with sidebar) lives at /admin
   return <Navigate to="/admin" replace />;
 }

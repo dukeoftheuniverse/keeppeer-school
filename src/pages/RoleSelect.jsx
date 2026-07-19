@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Shield, GraduationCap, Users, ArrowRight, School } from 'lucide-react';
 
 export default function RoleSelect({ onSelect }) {
+  const [remember, setRemember] = useState(false);
   const roles = [
     { id: 'admin', title: 'Admin Dashboard', desc: 'Full school management — students, staff, attendance, IDs & reports.', icon: Shield, color: 'from-[#004D5A] to-[#2BB5C6]' },
     { id: 'teacher', title: 'Teacher Account', desc: 'Manage your classes, take attendance & post announcements.', icon: GraduationCap, color: 'from-[#00796B] to-[#26A69A]' },
@@ -23,7 +24,7 @@ export default function RoleSelect({ onSelect }) {
           {roles.map(r => {
             const Icon = r.icon;
             return (
-              <button key={r.id} onClick={() => onSelect(r.id)}
+              <button key={r.id} onClick={() => onSelect(r.id, remember)}
                 className="kp-panel rounded-2xl p-6 text-left group hover:scale-[1.02] hover:shadow-xl transition-all duration-200 flex flex-col">
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${r.color} flex items-center justify-center mb-4 shadow-md`}>
                   <Icon className="w-7 h-7 text-white" />
@@ -37,6 +38,10 @@ export default function RoleSelect({ onSelect }) {
             );
           })}
         </div>
+        <label className="flex items-center justify-center gap-2 mt-6 text-sm text-gray-600 cursor-pointer select-none">
+          <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--kp-teal))] focus:ring-[hsl(var(--kp-teal))]" />
+          Remember my choice on this device (skip this screen next time)
+        </label>
       </div>
     </div>
   );

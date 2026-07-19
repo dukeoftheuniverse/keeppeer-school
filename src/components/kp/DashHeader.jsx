@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Clock, Settings, LogOut, RefreshCw } from 'lucide-react';
+import { clearRoleChoice } from '@/pages/DashboardRouter';
 
 export default function DashHeader({ greeting, name }) {
   const { user } = useAuth();
@@ -20,7 +21,7 @@ export default function DashHeader({ greeting, name }) {
   const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  const switchRole = () => { sessionStorage.removeItem('kp_selected_role'); window.location.href = '/'; };
+  const switchRole = () => { clearRoleChoice(); window.location.href = '/'; };
   const logout = async () => { await base44.auth.logout('/login'); };
 
   return (
