@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen, FileText } from 'lucide-react';
 
 const navItems = [
-  { label: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
   { label: 'School Profile', path: '/school-profile', icon: Building2 },
   { label: 'Account Settings', path: '/account-settings', icon: Settings },
   { label: 'User Accounts', path: '/user-accounts', icon: Users },
@@ -49,7 +49,7 @@ export default function Sidebar({ onNavigate }) {
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.path === '/'}
+            end={item.path === '/admin'}
             onClick={onNavigate}
             className={({ isActive }) =>
               `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${

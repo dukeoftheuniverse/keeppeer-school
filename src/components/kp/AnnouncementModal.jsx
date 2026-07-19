@@ -4,13 +4,13 @@ import { PagePanel, KpButton, KpInput, KpSelect } from '@/components/kp/ui';
 import { Megaphone, X, Loader2, AlertTriangle, CloudRain } from 'lucide-react';
 import { logAudit } from '@/lib/audit';
 
-export default function AnnouncementModal({ open, onClose, onCreated, defaultAudience = 'school', user }) {
+export default function AnnouncementModal({ open, onClose, onCreated, defaultAudience = 'school', defaultClass = '', user }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [priority, setPriority] = useState('normal');
   const [category, setCategory] = useState('school_announcement');
   const [audience, setAudience] = useState(defaultAudience);
-  const [targetClass, setTargetClass] = useState('');
+  const [targetClass, setTargetClass] = useState(defaultClass);
   const [classes, setClasses] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -18,9 +18,10 @@ export default function AnnouncementModal({ open, onClose, onCreated, defaultAud
   useEffect(() => {
     if (open) {
       setAudience(defaultAudience);
-      setTitle(''); setContent(''); setPriority('normal'); setCategory('school_announcement'); setTargetClass(''); setError(null);
+      setTargetClass(defaultClass);
+      setTitle(''); setContent(''); setPriority('normal'); setCategory('school_announcement'); setError(null);
     }
-  }, [open, defaultAudience]);
+  }, [open, defaultAudience, defaultClass]);
 
   useEffect(() => {
     base44.entities.Class.list().then(setClasses).catch(() => {});

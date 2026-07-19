@@ -9,8 +9,8 @@ export default function RoleSelect({ onSelect }) {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-3rem)] flex items-center justify-center py-8">
-      <div className="w-full max-w-4xl">
+    <div className="kp-site-bg min-h-screen flex items-center justify-center py-8">
+      <div className="w-full max-w-4xl px-4">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[hsl(var(--kp-teal))] text-white mb-4 shadow-lg">
             <School className="w-8 h-8" />

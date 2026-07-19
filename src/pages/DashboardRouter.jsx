@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
-import Dashboard from '@/pages/Dashboard';
 import TeacherDashboard from '@/pages/TeacherDashboard';
 import ParentDashboard from '@/pages/ParentDashboard';
 import RoleSelect from '@/pages/RoleSelect';
@@ -39,5 +38,6 @@ export default function DashboardRouter() {
 
   if (role === 'teacher') return <TeacherDashboard />;
   if (role === 'parent') return <ParentDashboard />;
-  return <Dashboard />;
+  // Admin → main admin dashboard (with sidebar) lives at /admin
+  return <Navigate to="/admin" replace />;
 }

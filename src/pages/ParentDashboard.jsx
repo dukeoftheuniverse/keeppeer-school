@@ -1,84 +1,92 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { PagePanel, PageTitle, StatusBadge, Avatar, EmptyState } from '@/components/kp/ui';
-import { Clock, Calendar, BookOpen, Megaphone, CloudSun, LogIn, Award, GraduationCap, School, ChevronRight } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import WeatherMonitor from '@/components/kp/WeatherMonitor';
+import DashHeader from '@/components/kp/DashHeader';
 import AnnouncementList from '@/components/kp/AnnouncementList';
+import { logAudit } from '@/lib/audit';
+import {
+  Calendar, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon, Megaphone, Award,
+  Clock, Loader2, Plus, QrCode, Trash2, ChevronRight, MapPin, GraduationCap, UserCheck, UserX, CheckCircle2
+} from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+
+function subjectIcon(name = '') {
+  const n = name.toLowerCase();
+  if (n.includes('science')) return FlaskConical;
+  if (n.includes('recess') || n.includes('break')) return Coffee;
+  if (n.includes('math')) return Calculator;
+  if (n.includes('dismissal') || n.includes('home')) return HomeIcon;
+  return BookOpen;
+}
 
 export default function ParentDashboard() {
   const { user } = useAuth();
   const [now, setNow] = useState(new Date());
   const [loading, setLoading] = useState(true);
+  const [school, setSchool] = useState(null);
   const [children, setChildren] = useState([]);
   const [selected, setSelected] = useState(null);
   const [attendance, setAttendance] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [school, setSchool] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [lrnInput, setLrnInput] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [linkMsg, setLinkMsg] = useState('');
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
+  const greeting = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
+
   const load = useCallback(async () => {
-    if (!user?.email) return;
+    if (!user?.email) { setLoading(false); return; }
     try {
-      const allStudents = await base44.entities.Student.list();
-      // Match children by parent_email
-      const mine = allStudents.filter(s =>
-        s.parent_email && s.parent_email.toLowerCase() === user.email.toLowerCase()
-      );
+      const [schools, allStudents, anns] = await Promise.all([
+        base44.entities.School.list().catch(() => []),
+        base44.entities.Student.list(),
+        base44.entities.Announcement.list('-created_date', 30).catch(() => []),
+      ]);
+      setSchool(schools[0] || null);
+      const mine = allStudents.filter(s => s.parent_email && s.parent_email.toLowerCase() === user.email.toLowerCase());
       setChildren(mine);
       if (mine.length && !selected) setSelected(mine[0]);
-
-      const schools = await base44.entities.School.list().catch(() => []);
-      setSchool(schools[0] || null);
-
-      const anns = await base44.entities.Announcement.list('-created_date', 20).catch(() => []);
       setAnnouncements(anns.filter(a => a.audience === 'school' || a.audience === 'class'));
-    } catch (e) {
-      // silent
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { /* */ }
+    finally { setLoading(false); }
   }, [user, selected]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Load attendance + schedule for selected child
   useEffect(() => {
     if (!selected) return;
-    base44.entities.Attendance.filter({ person_id: selected.id }).then(att => {
-      setAttendance(att);
-    }).catch(() => {});
+    base44.entities.Attendance.filter({ person_id: selected.id }).then(setAttendance).catch(() => setAttendance([]));
     const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     base44.entities.Schedule.filter({ day: dayName }).then(all => {
-      const mine = all.filter(s =>
-        s.class_name?.includes(selected.grade) || s.class_name?.includes(selected.section)
-      );
-      setSchedules(mine);
-    }).catch(() => {});
+      setSchedules(all.filter(s => s.class_name?.includes(selected.grade) && s.class_name?.includes(selected.section)));
+    }).catch(() => setSchedules([]));
   }, [selected]);
 
-  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const greeting = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
+  const linkChild = async () => {
+    if (!lrnInput.trim()) return;
+    setLinking(true); setLinkMsg('');
+    try {
+      const all = await base44.entities.Student.list();
+      const found = all.find(s => s.lrn === lrnInput.trim());
+      if (!found) { setLinkMsg('No student found with that LRN.'); setLinking(false); return; }
+      await base44.entities.Student.update(found.id, { parent_email: user.email });
+      setChildren(prev => prev.find(c => c.id === found.id) ? prev : [...prev, found]);
+      setSelected(found);
+      setLrnInput(''); setShowAdd(false);
+      setLinkMsg('Student linked successfully.');
+      logAudit('link_child', 'Student', found.id, `Linked to ${user.email}`);
+    } catch (e) { setLinkMsg('Failed to link student.'); }
+    finally { setLinking(false); }
+  };
 
-  if (loading) return <div className="text-center py-12 text-gray-400">Loading your dashboard...</div>;
-
-  if (children.length === 0) {
-    return (
-      <div className="space-y-4">
-        <PageTitle subtitle={dateStr}>Parent Dashboard</PageTitle>
-        <PagePanel>
-          <EmptyState message="No children are linked to your email. Please make sure your child's record lists your email as the parent contact, or contact the school administrator." />
-        </PagePanel>
-      </div>
-    );
-  }
+  if (loading) return <div className="kp-site-bg min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-white animate-spin" /></div>;
 
   const present = attendance.filter(a => a.status === 'present').length;
   const absent = attendance.filter(a => a.status === 'absent').length;
@@ -86,145 +94,200 @@ export default function ParentDashboard() {
   const total = present + absent + late;
   const rate = total ? Math.round((present / total) * 100) : 0;
 
+  const todayCheckin = attendance.find(a => a.date === new Date().toLocaleDateString('en-CA') && a.scan_type === 'time_in');
+  const schoolAnn = announcements.filter(a => a.audience === 'school');
+  const classAnn = announcements.filter(a => a.audience === 'class' && (!a.target_class || (selected && a.target_class === `${selected.grade} - ${selected.section}`)));
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <PageTitle subtitle={dateStr}>{greeting}, Parent</PageTitle>
-        <div className="kp-panel rounded-xl px-4 py-2.5 shadow-sm flex items-center gap-3">
-          <Clock className="w-5 h-5 text-[hsl(var(--kp-teal))]" />
-          <div>
-            <div className="text-lg font-bold text-[hsl(var(--kp-teal))] tabular-nums leading-none">{timeStr}</div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Philippine Standard Time</div>
-          </div>
+    <div className="kp-site-bg min-h-screen">
+      <DashHeader greeting={greeting} name="Parent" />
+      <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
+        {/* Greeting + time (mobile) */}
+        <div className="sm:hidden text-[#004D40]">
+          <div className="text-lg font-bold">{greeting}, Parent</div>
+          <div className="text-xs text-[#546E7A] flex items-center gap-1.5"><Clock className="w-3 h-3" /> {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}, {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
         </div>
-      </div>
 
-      {/* Children selector */}
-      <div>
-        <div className="flex items-center gap-3 overflow-x-auto kp-scroll-thin pb-2">
-          {children.map(c => (
-            <button key={c.id} onClick={() => setSelected(c)}
-              className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border-2 min-w-[100px] transition-all ${selected?.id === c.id ? 'border-[hsl(var(--kp-teal))] bg-[hsl(var(--accent))]' : 'border-transparent bg-white/60'}`}>
-              <Avatar name={`${c.first_name} ${c.last_name}`} src={c.photo_url} size="w-12 h-12" />
-              <span className="text-xs font-medium text-gray-700 truncate max-w-[90px]">{c.nickname || c.first_name}</span>
-            </button>
-          ))}
+        {/* My Student */}
+        <SectionBar icon={GraduationCap} label="My Student" />
+        <div className="flex gap-3 overflow-x-auto kp-scroll-thin pb-2">
+          {children.map(c => {
+            const active = selected?.id === c.id;
+            return (
+              <button key={c.id} onClick={() => setSelected(c)} className={`bg-white rounded-2xl shadow p-3 min-w-[120px] flex flex-col items-center gap-1.5 border-2 transition-all ${active ? 'border-[#004D5A]' : 'border-transparent hover:border-[#B2EBF2]'}`}>
+                <Avatar name={`${c.first_name} ${c.last_name}`} src={c.photo_url} size="w-12 h-12" />
+                <span className="text-xs font-semibold text-[#004D40] truncate max-w-[100px]">{c.nickname || c.first_name}</span>
+                <span className="text-[10px] text-[#546E7A]">{c.grade} - {c.section}</span>
+              </button>
+            );
+          })}
+          <button onClick={() => setShowAdd(true)} className="bg-white/70 rounded-2xl shadow p-3 min-w-[120px] flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-[#00BCD4] text-[#00838F] hover:bg-white">
+            <div className="w-12 h-12 rounded-full bg-[#009624] flex items-center justify-center"><Plus className="w-6 h-6 text-white" /></div>
+            <span className="text-xs font-medium">Add More</span>
+          </button>
         </div>
-      </div>
 
-      {selected && (
-        <>
-          {/* Student profile + attendance summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <PagePanel>
-              <div className="flex flex-col items-center text-center">
-                <Avatar name={`${selected.first_name} ${selected.last_name}`} src={selected.photo_url} size="w-20 h-20" />
-                <h3 className="text-base font-bold text-[hsl(var(--kp-teal))] mt-2">{selected.first_name} {selected.last_name}</h3>
-                <div className="text-xs text-gray-400 font-mono mt-0.5">LRN: {selected.lrn || '—'}</div>
-                <div className="flex items-center gap-2 mt-2">
-                  <StatusBadge status={selected.enrollment_status} />
-                  <span className="text-[11px] text-gray-500">{selected.grade} - {selected.section}</span>
-                </div>
-                <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
-                  <School className="w-3.5 h-3.5" /> {school?.school_name || 'Labangal Elementary School'}
-                </div>
-                <div className="text-[11px] text-gray-400 mt-0.5">SY {school?.academic_year || '2026-2027'}</div>
-                {/* Badges */}
-                <div className="flex gap-1.5 mt-3">
-                  {[1,2,3,4,5].map(i => (
-                    <div key={i} className={`w-7 h-7 rounded-full flex items-center justify-center ${i <= Math.ceil(rate/20) ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-300'}`}>
-                      <Award className="w-3.5 h-3.5" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </PagePanel>
+        {showAdd && (
+          <Card>
+            <h3 className="text-sm font-bold text-[#004D40] mb-2">Link a Student</h3>
+            <p className="text-xs text-[#546E7A] mb-3">Enter your child's LRN to link them to your account.</p>
+            <div className="flex gap-2">
+              <input value={lrnInput} onChange={e => setLrnInput(e.target.value)} placeholder="Enter LRN..." className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm" />
+              <button onClick={linkChild} disabled={linking} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium disabled:opacity-50 flex items-center gap-1.5">{linking ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />} Link</button>
+              <button onClick={() => { setShowAdd(false); setLinkMsg(''); }} className="px-3 py-2 rounded-lg bg-gray-100 text-gray-500 text-sm">Cancel</button>
+            </div>
+            {linkMsg && <p className="text-xs text-[#006064] mt-2">{linkMsg}</p>}
+          </Card>
+        )}
 
-            <PagePanel className="lg:col-span-2">
-              <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-3 flex items-center gap-2"><GraduationCap className="w-4 h-4" /> Attendance Summary</h3>
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                <div className="relative w-44 h-44 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={[
-                        { name: 'Present', value: present, color: '#009624' },
-                        { name: 'Absent', value: absent, color: '#CC2424' },
-                        { name: 'Late', value: late, color: '#F29339' },
-                      ].filter(d => d.value > 0)} dataKey="value" innerRadius={52} outerRadius={78} paddingAngle={3} startAngle={90} endAngle={-270} stroke="none">
-                        {[{c:'#009624'},{c:'#CC2424'},{c:'#F29339'}].map((d,i) => <Cell key={i} fill={d.c} />)}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div className="text-2xl font-bold text-[hsl(var(--kp-teal))] leading-none">{rate}%</div>
-                    <div className="text-[10px] text-gray-400">Attendance</div>
+        {children.length === 0 && !showAdd ? (
+          <Card>
+            <div className="text-center py-10">
+              <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-[#004D40] mb-1">No children linked yet</h3>
+              <p className="text-sm text-[#546E7A] mb-3">Tap "Add More" and enter your child's LRN to start tracking their records.</p>
+            </div>
+          </Card>
+        ) : selected && (
+          <>
+            {/* Profile + Attendance summary */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <Card>
+                <div className="flex flex-col items-center text-center">
+                  <Avatar name={`${selected.first_name} ${selected.last_name}`} src={selected.photo_url} size="w-24 h-24" />
+                  <h3 className="text-base font-bold text-[#004D40] mt-2">{selected.first_name} {selected.last_name}</h3>
+                  <div className="text-xs text-[#546E7A] mt-0.5">Enrolled {school?.school_name || 'Labangal Elementary School'}</div>
+                  <div className="text-[11px] text-[#546E7A]">School Year {school?.academic_year || '2026-2027'}</div>
+                  <div className="flex gap-1.5 mt-3">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div key={i} className={`w-7 h-7 rounded-full flex items-center justify-center ${i <= Math.ceil(rate / 20) ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-300'}`}><Award className="w-3.5 h-3.5" /></div>
+                    ))}
                   </div>
                 </div>
-                <div className="flex-1 space-y-2.5 w-full">
-                  <Row label="Present Days" value={present} color="#009624" />
-                  <Row label="Absent Days" value={absent} color="#CC2424" />
-                  <Row label="Late Days" value={late} color="#F29339" />
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: selected.inside_status === 'inside' ? '#009624' : '#9ca3af' }} />
-                    <span className="text-sm text-gray-600">{selected.inside_status === 'inside' ? 'Inside Campus' : 'Outside Campus'}</span>
-                  </div>
-                </div>
-              </div>
-            </PagePanel>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Today's schedule */}
-            <PagePanel className="lg:col-span-2">
-              <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-3 flex items-center gap-2"><Calendar className="w-4 h-4" /> Today's Schedule</h3>
-              {schedules.length === 0 ? <EmptyState message="No classes scheduled today" /> : (
-                <div className="space-y-1.5">
-                  {schedules.map(s => (
-                    <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50">
-                      <div className="text-xs font-medium text-[hsl(var(--kp-teal))] w-24 shrink-0">{s.start_time} - {s.end_time}</div>
-                      <BookOpen className="w-4 h-4 text-[hsl(var(--kp-teal))] shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-700 truncate">{s.subject_name}</div>
-                        <div className="text-xs text-gray-400">{s.teacher_name} • Room {s.room || '—'}</div>
-                      </div>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="text-xs font-semibold text-[#006064] mb-1.5">Connected Contacts</div>
+                  {[selected.parent_email, user.email].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).map(em => (
+                    <div key={em} className="flex items-center justify-between text-xs text-[#546E7A] py-1">
+                      <span className="truncate">{em}</span>
+                      <Trash2 className="w-3.5 h-3.5 text-gray-300" />
                     </div>
                   ))}
+                  {!selected.parent_email && !user.email && <p className="text-xs text-gray-400">No contacts connected.</p>}
                 </div>
-              )}
-            </PagePanel>
+              </Card>
 
-            {/* Weather */}
-            <PagePanel>
-              <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-3 flex items-center gap-2"><CloudSun className="w-4 h-4" /> Weather & Safety</h3>
-              <WeatherMonitor compact />
-            </PagePanel>
-          </div>
+              <Card className="lg:col-span-2">
+                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><UserCheck className="w-5 h-5 text-[#006064]" /> Attendance Summary</h3>
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="relative w-40 h-40 shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={[{ name: 'Present', value: present || 1, color: '#009624' }]} dataKey="value" innerRadius={56} outerRadius={78} startAngle={-90} endAngle={-90 + (rate / 100) * 360} stroke="none">
+                          <Cell fill="#009624" />
+                        </Pie>
+                        <Pie data={[{ name: 'bg', value: 1, color: '#E0F7FA' }]} dataKey="value" innerRadius={56} outerRadius={78} startAngle={-90 + (rate / 100) * 360} endAngle={270} stroke="none">
+                          <Cell fill="#E0F7FA" />
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <div className="text-3xl font-bold text-[#009624] leading-none">{rate}%</div>
+                      <div className="text-[10px] text-[#546E7A]">Attendance</div>
+                    </div>
+                  </div>
+                  <div className="flex-1 grid grid-cols-3 gap-2 w-full">
+                    <StatBox label="Present Days" value={present} color="#009624" />
+                    <StatBox label="Absent Days" value={absent} color="#CC2424" />
+                    <StatBox label="Late Days" value={late} color="#F29339" />
+                  </div>
+                </div>
+                <button className="mt-4 text-xs font-medium text-[#006064] hover:underline flex items-center gap-1">View Attendance History <ChevronRight className="w-3.5 h-3.5" /></button>
+              </Card>
+            </div>
 
-          {/* School + Class announcements */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <PagePanel>
-              <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-3 flex items-center gap-2"><Megaphone className="w-4 h-4" /> School Announcements</h3>
-              <AnnouncementList announcements={announcements.filter(a => a.audience === 'school')} maxHeight="200px" emptyMessage="No school announcements" />
-            </PagePanel>
-            <PagePanel>
-              <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-3 flex items-center gap-2"><BookOpen className="w-4 h-4" /> Class Announcements</h3>
-              <AnnouncementList announcements={announcements.filter(a => a.audience === 'class' && (!a.target_class || a.target_class === `${selected.grade} - ${selected.section}`))} maxHeight="200px" emptyMessage="No class announcements" />
-            </PagePanel>
-          </div>
-        </>
-      )}
+            {/* Schedule + Attendance status */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <Card className="lg:col-span-2">
+                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Schedule</h3>
+                {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> : (
+                  <div className="relative pl-6">
+                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
+                    {schedules.map(s => {
+                      const SIcon = subjectIcon(s.subject_name);
+                      return (
+                        <div key={s.id} className="relative mb-3 last:mb-0">
+                          <div className="absolute -left-[18px] top-1 w-3.5 h-3.5 rounded-full bg-[#00BCD4] border-2 border-white shadow" />
+                          <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm">
+                            <div className="w-9 h-9 rounded-lg bg-[#E0F7FA] flex items-center justify-center shrink-0"><SIcon className="w-4 h-4 text-[#006064]" /></div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-[#004D40] truncate">{s.subject_name}</div>
+                              <div className="text-[11px] text-[#546E7A]">{s.teacher_name ? `Teacher ${s.teacher_name.split(' ')[0]}` : ''} {s.room ? `• Room ${s.room}` : ''}</div>
+                            </div>
+                            <div className="text-xs font-medium text-[#006064] shrink-0">{s.start_time} - {s.end_time}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+
+              <Card>
+                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#006064]" /> Attendance Status</h3>
+                <div className={`rounded-xl px-3 py-2 text-sm font-semibold inline-flex items-center gap-1.5 ${selected.inside_status === 'inside' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`w-2 h-2 rounded-full ${selected.inside_status === 'inside' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  {selected.inside_status === 'inside' ? 'Inside Campus' : 'Outside Campus'}
+                </div>
+                {todayCheckin ? (
+                  <div className="mt-3 space-y-2 text-sm">
+                    <div className="text-green-600 font-semibold">Present</div>
+                    <div className="text-xs text-[#546E7A]">Checked in {todayCheckin.time || '—'}, {new Date(todayCheckin.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                    <div className="text-xs text-[#546E7A]">{selected.grade} - {selected.section}</div>
+                    {todayCheckin.method && <div className="text-[11px] text-gray-400 capitalize">via {todayCheckin.method}</div>}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-[#546E7A]">No check-in recorded yet today.</p>
+                )}
+                <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-[#546E7A] flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#006064]" /> {school?.address || 'Labangal Elementary School'}</div>
+              </Card>
+            </div>
+
+            {/* Announcements */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card>
+                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> School Announcements</h3>
+                <AnnouncementList announcements={schoolAnn} maxHeight="220px" emptyMessage="No school announcements" />
+                <button className="mt-2 text-xs font-medium text-[#006064] hover:underline flex items-center gap-1">View All Announcements <ChevronRight className="w-3.5 h-3.5" /></button>
+              </Card>
+              <Card>
+                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-[#006064]" /> Class Announcements</h3>
+                <AnnouncementList announcements={classAnn} maxHeight="220px" emptyMessage="No class announcements" />
+                <button className="mt-2 text-xs font-medium text-[#006064] hover:underline flex items-center gap-1">View All Announcements <ChevronRight className="w-3.5 h-3.5" /></button>
+              </Card>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }
 
-function Row({ label, value, color }) {
+function Card({ children, className = '' }) {
+  return <div className={`bg-white rounded-2xl shadow-md p-4 sm:p-5 ${className}`}>{children}</div>;
+}
+function SectionBar({ icon: Icon, label }) {
+  return <div className="bg-[#006064] rounded-xl px-4 py-2.5 flex items-center gap-2 text-white font-bold text-sm"><Icon className="w-4 h-4" /> {label}</div>;
+}
+function Avatar({ name, src, size = 'w-8 h-8' }) {
+  const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+  if (src) return <img src={src} alt={name} className={`${size} rounded-full object-cover shrink-0`} />;
+  return <div className={`${size} rounded-full bg-[#B2EBF2] flex items-center justify-center text-[#006064] text-sm font-semibold shrink-0`}>{initials}</div>;
+}
+function StatBox({ label, value, color }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${color}18` }}>
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-      </div>
-      <span className="text-sm text-gray-600 flex-1">{label}</span>
-      <span className="font-bold text-gray-700">{value}</span>
+    <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
+      <div className="text-2xl font-bold" style={{ color }}>{value}</div>
+      <div className="text-[10px] text-gray-400 mt-0.5">{label}</div>
     </div>
   );
 }
