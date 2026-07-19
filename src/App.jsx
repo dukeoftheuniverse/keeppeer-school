@@ -28,6 +28,11 @@ import IDMaker from '@/pages/IDMaker';
 import AttendanceScanner from '@/pages/AttendanceScanner';
 import Reports from '@/pages/Reports';
 import DownloadSource from '@/pages/DownloadSource';
+import FacialRecognitionDashboard from '@/pages/FacialRecognitionDashboard';
+import ScanRecognizeFace from '@/pages/ScanRecognizeFace';
+import RecordProfilePerson from '@/pages/RecordProfilePerson';
+import RegisteredFaceDatabase from '@/pages/RegisteredFaceDatabase';
+import FacialRecognitionSettings from '@/pages/FacialRecognitionSettings';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -76,6 +81,11 @@ const AuthenticatedApp = () => {
           <Route path="/attendance" element={<AttendanceScanner />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/download-source" element={<DownloadSource />} />
+          <Route path="/facial-recognition" element={<FacialRecognitionDashboard />} />
+          <Route path="/facial-recognition/scan" element={<ScanRecognizeFace />} />
+          <Route path="/facial-recognition/record" element={<RecordProfilePerson />} />
+          <Route path="/facial-recognition/database" element={<RegisteredFaceDatabase />} />
+          <Route path="/facial-recognition/settings" element={<FacialRecognitionSettings />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

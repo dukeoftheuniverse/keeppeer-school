@@ -1,0 +1,62 @@
+{
+  "name": "LivenessResult",
+  "type": "object",
+  "properties": {
+    "attemptId": {
+      "type": "string"
+    },
+    "livenessMethod": {
+      "type": "string",
+      "enum": [
+        "Passive",
+        "Active Blink",
+        "Active Movement"
+      ],
+      "default": "Passive"
+    },
+    "blinkDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "movementDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "textureAnalysisScore": {
+      "type": "number"
+    },
+    "depthAnalysisScore": {
+      "type": "number"
+    },
+    "replayAttackDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "photoAttackDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "screenAttackDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "maskDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "overallLivenessScore": {
+      "type": "number"
+    },
+    "passed": {
+      "type": "boolean",
+      "default": false
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "attemptId"
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "name": "PersonProfile",
+  "type": "object",
+  "properties": {
+    "personType": {
+      "type": "string",
+      "enum": [
+        "Student",
+        "Teacher",
+        "Employee",
+        "Administrator",
+        "Parent/Guardian",
+        "Authorized Visitor"
+      ],
+      "default": "Student"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "idNumber": {
+      "type": "string"
+    },
+    "lrn": {
+      "type": "string"
+    },
+    "gradeLevel": {
+      "type": "string"
+    },
+    "section": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "dateOfBirth": {
+      "type": "string",
+      "format": "date"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "Male",
+        "Female",
+        "Other"
+      ]
+    },
+    "address": {
+      "type": "string"
+    },
+    "contactNumber": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "parentGuardianName": {
+      "type": "string"
+    },
+    "emergencyContact": {
+      "type": "string"
+    },
+    "campus": {
+      "type": "string"
+    },
+    "assignedBuilding": {
+      "type": "string"
+    },
+    "assignedRoom": {
+      "type": "string"
+    },
+    "accessPermissionLevel": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Elevated",
+        "Admin",
+        "Restricted"
+      ],
+      "default": "Standard"
+    },
+    "accountStatus": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Inactive",
+        "Suspended"
+      ],
+      "default": "Active"
+    },
+    "registrationDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "profilePhoto": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "personType",
+    "fullName"
+  ]
+}

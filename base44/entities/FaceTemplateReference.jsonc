@@ -1,0 +1,45 @@
+{
+  "name": "FaceTemplateReference",
+  "type": "object",
+  "properties": {
+    "enrollmentId": {
+      "type": "string"
+    },
+    "templateHash": {
+      "type": "string"
+    },
+    "storageLocation": {
+      "type": "string",
+      "enum": [
+        "Local Secure",
+        "External API"
+      ],
+      "default": "Local Secure"
+    },
+    "apiKeyReference": {
+      "type": "string"
+    },
+    "encryptionMethod": {
+      "type": "string"
+    },
+    "templateVersion": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "deprecatedDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "enrollmentId",
+    "templateHash"
+  ]
+}

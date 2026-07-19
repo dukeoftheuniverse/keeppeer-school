@@ -1,0 +1,83 @@
+{
+  "name": "RecognitionAttempt",
+  "type": "object",
+  "properties": {
+    "attemptId": {
+      "type": "string"
+    },
+    "scannerDeviceId": {
+      "type": "string"
+    },
+    "scannerLocation": {
+      "type": "string"
+    },
+    "personType": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date"
+    },
+    "recognitionMode": {
+      "type": "string",
+      "enum": [
+        "One-to-One",
+        "One-to-Many",
+        "Face+QR",
+        "Continuous Classroom",
+        "Visitor Verification",
+        "Manual Fallback"
+      ],
+      "default": "One-to-Many"
+    },
+    "faceDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "livenessPassed": {
+      "type": "boolean",
+      "default": false
+    },
+    "qualityScore": {
+      "type": "number"
+    },
+    "confidenceScore": {
+      "type": "number"
+    },
+    "matchedEnrollmentId": {
+      "type": "string"
+    },
+    "matchedPersonName": {
+      "type": "string"
+    },
+    "matchedPersonType": {
+      "type": "string"
+    },
+    "result": {
+      "type": "string",
+      "enum": [
+        "Success",
+        "No Match",
+        "Low Confidence",
+        "Multiple Faces",
+        "Poor Lighting",
+        "Face Too Far",
+        "Spoofing Detected",
+        "Suspended Account",
+        "Camera Permission Denied",
+        "Connection Error"
+      ],
+      "default": "No Match"
+    },
+    "processingTimeMs": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "attemptId",
+    "scannerDeviceId"
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "name": "StudentProfile",
+  "type": "object",
+  "properties": {
+    "personProfileId": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "studentId": {
+      "type": "string"
+    },
+    "lrn": {
+      "type": "string"
+    },
+    "gradeLevel": {
+      "type": "string"
+    },
+    "section": {
+      "type": "string"
+    },
+    "campus": {
+      "type": "string"
+    },
+    "parentGuardianName": {
+      "type": "string"
+    },
+    "parentContact": {
+      "type": "string"
+    },
+    "enrollmentStatus": {
+      "type": "string",
+      "enum": [
+        "Enrolled",
+        "Transferred",
+        "Graduated",
+        "Inactive"
+      ],
+      "default": "Enrolled"
+    },
+    "enrollmentDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "personProfileId",
+    "fullName"
+  ]
+}

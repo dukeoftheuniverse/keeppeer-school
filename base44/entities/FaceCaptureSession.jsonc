@@ -1,0 +1,132 @@
+{
+  "name": "FaceCaptureSession",
+  "type": "object",
+  "properties": {
+    "enrollmentId": {
+      "type": "string"
+    },
+    "sessionType": {
+      "type": "string",
+      "enum": [
+        "Enrollment",
+        "Re-enrollment",
+        "Verification"
+      ],
+      "default": "Enrollment"
+    },
+    "captureSteps": {
+      "type": "string"
+    },
+    "completedSteps": {
+      "type": "string"
+    },
+    "frontFaceCaptured": {
+      "type": "boolean",
+      "default": false
+    },
+    "leftAngleCaptured": {
+      "type": "boolean",
+      "default": false
+    },
+    "rightAngleCaptured": {
+      "type": "boolean",
+      "default": false
+    },
+    "blinkConfirmed": {
+      "type": "boolean",
+      "default": false
+    },
+    "livenessConfirmed": {
+      "type": "boolean",
+      "default": false
+    },
+    "faceQualityAccepted": {
+      "type": "boolean",
+      "default": false
+    },
+    "lightingQuality": {
+      "type": "string",
+      "enum": [
+        "Good",
+        "Poor",
+        "Too Dark",
+        "Too Bright"
+      ],
+      "default": "Good"
+    },
+    "imageSharpness": {
+      "type": "string",
+      "enum": [
+        "Sharp",
+        "Blurry"
+      ],
+      "default": "Sharp"
+    },
+    "faceSize": {
+      "type": "string",
+      "enum": [
+        "Good",
+        "Too Far"
+      ],
+      "default": "Good"
+    },
+    "facePosition": {
+      "type": "string",
+      "enum": [
+        "Centered",
+        "Off Center"
+      ],
+      "default": "Centered"
+    },
+    "cameraResolution": {
+      "type": "string"
+    },
+    "eyeglassGlare": {
+      "type": "boolean",
+      "default": false
+    },
+    "faceObstruction": {
+      "type": "boolean",
+      "default": false
+    },
+    "multipleFacesDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "excessiveMovement": {
+      "type": "boolean",
+      "default": false
+    },
+    "maskDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "spoofingDetected": {
+      "type": "boolean",
+      "default": false
+    },
+    "overallStatus": {
+      "type": "string",
+      "enum": [
+        "In Progress",
+        "Completed",
+        "Rejected",
+        "Failed"
+      ],
+      "default": "In Progress"
+    },
+    "captureDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "deviceInfo": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "enrollmentId"
+  ]
+}

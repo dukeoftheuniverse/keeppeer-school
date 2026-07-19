@@ -1,0 +1,47 @@
+{
+  "name": "RecognitionThreshold",
+  "type": "object",
+  "properties": {
+    "thresholdName": {
+      "type": "string"
+    },
+    "minValue": {
+      "type": "number"
+    },
+    "description": {
+      "type": "string"
+    },
+    "isGlobal": {
+      "type": "boolean",
+      "default": false
+    },
+    "appliesToPersonType": {
+      "type": "string"
+    },
+    "scannerLocationId": {
+      "type": "string"
+    },
+    "livenessThreshold": {
+      "type": "number",
+      "default": 70
+    },
+    "qualityThreshold": {
+      "type": "number",
+      "default": 60
+    },
+    "confidenceThreshold": {
+      "type": "number",
+      "default": 80
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date"
+    },
+    "updatedBy": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "thresholdName"
+  ]
+}

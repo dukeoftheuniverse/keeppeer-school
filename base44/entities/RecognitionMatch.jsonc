@@ -1,0 +1,55 @@
+{
+  "name": "RecognitionMatch",
+  "type": "object",
+  "properties": {
+    "attemptId": {
+      "type": "string"
+    },
+    "enrollmentId": {
+      "type": "string"
+    },
+    "personProfileId": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "personType": {
+      "type": "string"
+    },
+    "idNumber": {
+      "type": "string"
+    },
+    "confidenceScore": {
+      "type": "number"
+    },
+    "thresholdScore": {
+      "type": "number"
+    },
+    "isConfirmed": {
+      "type": "boolean",
+      "default": false
+    },
+    "requiresManualReview": {
+      "type": "boolean",
+      "default": false
+    },
+    "profilePhoto": {
+      "type": "string"
+    },
+    "gradeSection": {
+      "type": "string"
+    },
+    "departmentPosition": {
+      "type": "string"
+    },
+    "matchDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "attemptId",
+    "enrollmentId"
+  ]
+}

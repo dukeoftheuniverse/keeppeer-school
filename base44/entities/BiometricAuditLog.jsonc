@@ -1,0 +1,55 @@
+{
+  "name": "BiometricAuditLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "Enrollment",
+        "Re-enrollment",
+        "Recognition",
+        "Deletion",
+        "Template Replace",
+        "Consent Withdrawn",
+        "Consent Granted",
+        "Threshold Changed",
+        "Profile Updated",
+        "Suspended",
+        "Activated",
+        "Export",
+        "Manual Review"
+      ],
+      "default": "Recognition"
+    },
+    "enrollmentId": {
+      "type": "string"
+    },
+    "personProfileId": {
+      "type": "string"
+    },
+    "performedBy": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date"
+    },
+    "ipAddress": {
+      "type": "string"
+    },
+    "deviceInfo": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "isBiometricData": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "action",
+    "performedBy"
+  ]
+}

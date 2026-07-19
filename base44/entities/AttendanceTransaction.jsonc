@@ -1,0 +1,91 @@
+{
+  "name": "AttendanceTransaction",
+  "type": "object",
+  "properties": {
+    "transactionId": {
+      "type": "string"
+    },
+    "personProfileId": {
+      "type": "string"
+    },
+    "personType": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "idNumber": {
+      "type": "string"
+    },
+    "recognitionAttemptId": {
+      "type": "string"
+    },
+    "scannerDeviceId": {
+      "type": "string"
+    },
+    "scannerLocation": {
+      "type": "string"
+    },
+    "attendanceAction": {
+      "type": "string",
+      "enum": [
+        "School Time In",
+        "School Time Out",
+        "Classroom Present",
+        "Teacher Time In",
+        "Teacher Time Out",
+        "Employee Time In",
+        "Employee Time Out",
+        "Event Entry",
+        "Event Exit",
+        "Visitor Entry",
+        "Visitor Exit",
+        "Restricted Area Access"
+      ],
+      "default": "School Time In"
+    },
+    "attendanceStatus": {
+      "type": "string",
+      "enum": [
+        "Present",
+        "Late",
+        "Excused",
+        "Early Departure",
+        "Overtime",
+        "Wrong Classroom",
+        "Outside Scheduled Time",
+        "Unauthorized Location",
+        "Duplicate Scan",
+        "Missing Time Out"
+      ],
+      "default": "Present"
+    },
+    "scheduledTime": {
+      "type": "string"
+    },
+    "actualTime": {
+      "type": "string",
+      "format": "date"
+    },
+    "campus": {
+      "type": "string"
+    },
+    "gradeSection": {
+      "type": "string"
+    },
+    "departmentPosition": {
+      "type": "string"
+    },
+    "accessPermissionLevel": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transactionId",
+    "personProfileId",
+    "fullName"
+  ]
+}

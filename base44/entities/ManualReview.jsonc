@@ -1,0 +1,69 @@
+{
+  "name": "ManualReview",
+  "type": "object",
+  "properties": {
+    "attemptId": {
+      "type": "string"
+    },
+    "enrollmentId": {
+      "type": "string"
+    },
+    "reviewType": {
+      "type": "string",
+      "enum": [
+        "Low Confidence Match",
+        "Spoofing Attempt",
+        "Similar Faces",
+        "Repeated Failed Recognition",
+        "Suspended Account",
+        "Outside Schedule",
+        "Manual Override"
+      ],
+      "default": "Low Confidence Match"
+    },
+    "personProfileId": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "confidenceScore": {
+      "type": "number"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "submittedBy": {
+      "type": "string"
+    },
+    "submittedDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "reviewedBy": {
+      "type": "string"
+    },
+    "reviewDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "reviewDecision": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Rejected",
+        "Requires Re-enrollment"
+      ],
+      "default": "Pending"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "attemptId",
+    "reviewType",
+    "reason"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "name": "ScannerLocation",
+  "type": "object",
+  "properties": {
+    "locationName": {
+      "type": "string"
+    },
+    "campus": {
+      "type": "string"
+    },
+    "building": {
+      "type": "string"
+    },
+    "room": {
+      "type": "string"
+    },
+    "locationType": {
+      "type": "string",
+      "enum": [
+        "Main Entrance",
+        "Classroom",
+        "Office",
+        "Restricted Area",
+        "Event Entrance",
+        "Visitor Desk"
+      ],
+      "default": "Main Entrance"
+    },
+    "assignedScannerId": {
+      "type": "string"
+    },
+    "operationalHours": {
+      "type": "string"
+    },
+    "accessLevelRequired": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Elevated",
+        "Admin",
+        "Restricted"
+      ],
+      "default": "Standard"
+    }
+  },
+  "required": [
+    "locationName"
+  ]
+}

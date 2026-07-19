@@ -1,0 +1,112 @@
+{
+  "name": "FaceEnrollment",
+  "type": "object",
+  "properties": {
+    "facialRecordId": {
+      "type": "string"
+    },
+    "personProfileId": {
+      "type": "string"
+    },
+    "personType": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "idNumber": {
+      "type": "string"
+    },
+    "secureTemplateReference": {
+      "type": "string"
+    },
+    "enrollmentQualityScore": {
+      "type": "number"
+    },
+    "livenessResult": {
+      "type": "string",
+      "enum": [
+        "Passed",
+        "Failed",
+        "Pending"
+      ],
+      "default": "Pending"
+    },
+    "registrationDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "registrationDevice": {
+      "type": "string"
+    },
+    "registeredCampus": {
+      "type": "string"
+    },
+    "registeredBy": {
+      "type": "string"
+    },
+    "consentRecordId": {
+      "type": "string"
+    },
+    "recognitionStatus": {
+      "type": "string",
+      "enum": [
+        "Not Registered",
+        "Registration In Progress",
+        "Consent Pending",
+        "Face Recording Required",
+        "Processing",
+        "Active",
+        "Low Quality",
+        "Re-enrollment Required",
+        "Suspended",
+        "Disabled",
+        "Deleted"
+      ],
+      "default": "Not Registered"
+    },
+    "lastSuccessfulRecognition": {
+      "type": "string",
+      "format": "date"
+    },
+    "successfulMatchCount": {
+      "type": "number",
+      "default": 0
+    },
+    "failedMatchCount": {
+      "type": "number",
+      "default": 0
+    },
+    "reEnrollmentStatus": {
+      "type": "string",
+      "enum": [
+        "Not Required",
+        "Required",
+        "In Progress",
+        "Completed"
+      ],
+      "default": "Not Required"
+    },
+    "accountStatus": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "Suspended",
+        "Disabled"
+      ],
+      "default": "Active"
+    },
+    "encryptionVersion": {
+      "type": "string"
+    },
+    "retentionExpiryDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "personProfileId",
+    "personType",
+    "fullName"
+  ]
+}

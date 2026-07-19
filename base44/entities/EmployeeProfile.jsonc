@@ -1,0 +1,52 @@
+{
+  "name": "EmployeeProfile",
+  "type": "object",
+  "properties": {
+    "personProfileId": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "employeeId": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string"
+    },
+    "campus": {
+      "type": "string"
+    },
+    "employmentType": {
+      "type": "string",
+      "enum": [
+        "Full-time",
+        "Part-time",
+        "Contract",
+        "Visitor"
+      ],
+      "default": "Full-time"
+    },
+    "employmentStatus": {
+      "type": "string",
+      "enum": [
+        "Active",
+        "On Leave",
+        "Resigned",
+        "Terminated"
+      ],
+      "default": "Active"
+    },
+    "hireDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "personProfileId",
+    "fullName"
+  ]
+}

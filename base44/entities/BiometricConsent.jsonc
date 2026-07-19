@@ -1,0 +1,60 @@
+{
+  "name": "BiometricConsent",
+  "type": "object",
+  "properties": {
+    "enrollmentId": {
+      "type": "string"
+    },
+    "personProfileId": {
+      "type": "string"
+    },
+    "consentingPersonName": {
+      "type": "string"
+    },
+    "relationshipToStudent": {
+      "type": "string"
+    },
+    "consentDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "consentMethod": {
+      "type": "string",
+      "enum": [
+        "In Person",
+        "Digital Signature",
+        "Verbal with Witness",
+        "Guardian Digital Signature"
+      ],
+      "default": "Digital Signature"
+    },
+    "digitalSignature": {
+      "type": "string"
+    },
+    "adminProcessor": {
+      "type": "string"
+    },
+    "consentText": {
+      "type": "string"
+    },
+    "consentWithdrawn": {
+      "type": "boolean",
+      "default": false
+    },
+    "withdrawalDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "withdrawalReason": {
+      "type": "string"
+    },
+    "withdrawalProcessedBy": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "enrollmentId",
+    "personProfileId",
+    "consentingPersonName"
+  ]
+}

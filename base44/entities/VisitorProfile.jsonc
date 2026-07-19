@@ -1,0 +1,55 @@
+{
+  "name": "VisitorProfile",
+  "type": "object",
+  "properties": {
+    "personProfileId": {
+      "type": "string"
+    },
+    "fullName": {
+      "type": "string"
+    },
+    "visitorId": {
+      "type": "string"
+    },
+    "referenceNumber": {
+      "type": "string"
+    },
+    "purposeOfVisit": {
+      "type": "string"
+    },
+    "approvedDestination": {
+      "type": "string"
+    },
+    "permittedVisitSchedule": {
+      "type": "string"
+    },
+    "hostName": {
+      "type": "string"
+    },
+    "hostDepartment": {
+      "type": "string"
+    },
+    "validFrom": {
+      "type": "string",
+      "format": "date"
+    },
+    "validUntil": {
+      "type": "string",
+      "format": "date"
+    },
+    "visitorStatus": {
+      "type": "string",
+      "enum": [
+        "Approved",
+        "Pending",
+        "Expired",
+        "Revoked"
+      ],
+      "default": "Pending"
+    }
+  },
+  "required": [
+    "personProfileId",
+    "fullName"
+  ]
+}

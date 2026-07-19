@@ -1,0 +1,60 @@
+{
+  "name": "AccessPermission",
+  "type": "object",
+  "properties": {
+    "personProfileId": {
+      "type": "string"
+    },
+    "permissionLevel": {
+      "type": "string",
+      "enum": [
+        "Standard",
+        "Elevated",
+        "Admin",
+        "Restricted"
+      ],
+      "default": "Standard"
+    },
+    "allowedLocations": {
+      "type": "string"
+    },
+    "allowedBuildings": {
+      "type": "string"
+    },
+    "timeWindowStart": {
+      "type": "string"
+    },
+    "timeWindowEnd": {
+      "type": "string"
+    },
+    "validDays": {
+      "type": "string"
+    },
+    "validFromDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "validUntilDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "grantedBy": {
+      "type": "string"
+    },
+    "grantedDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "isRevoked": {
+      "type": "boolean",
+      "default": false
+    },
+    "revokedDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "personProfileId"
+  ]
+}

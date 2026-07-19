@@ -1,0 +1,66 @@
+{
+  "name": "ScannerDevice",
+  "type": "object",
+  "properties": {
+    "deviceName": {
+      "type": "string"
+    },
+    "deviceType": {
+      "type": "string",
+      "enum": [
+        "Desktop Camera",
+        "Tablet Camera",
+        "Mobile Camera",
+        "Dedicated Scanner",
+        "Webcam"
+      ],
+      "default": "Desktop Camera"
+    },
+    "deviceId": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "campus": {
+      "type": "string"
+    },
+    "assignedBuilding": {
+      "type": "string"
+    },
+    "assignedRoom": {
+      "type": "string"
+    },
+    "ipAddress": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Online",
+        "Offline",
+        "Maintenance",
+        "Disabled"
+      ],
+      "default": "Online"
+    },
+    "lastHeartbeat": {
+      "type": "string",
+      "format": "date"
+    },
+    "registeredDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "firmwareVersion": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "deviceName",
+    "deviceId"
+  ]
+}

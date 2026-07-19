@@ -1,0 +1,71 @@
+{
+  "name": "SecurityAlert",
+  "type": "object",
+  "properties": {
+    "alertType": {
+      "type": "string",
+      "enum": [
+        "Unregistered Face Repeated",
+        "Spoofing Attempt",
+        "Suspended User Attempt",
+        "Re-enrollment Required",
+        "Scanner Offline",
+        "Unauthorized Location Scan",
+        "Low Confidence Approved",
+        "Facial Record Deleted",
+        "Consent Withdrawn"
+      ],
+      "default": "Unregistered Face Repeated"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "Info",
+        "Warning",
+        "High",
+        "Critical"
+      ],
+      "default": "Info"
+    },
+    "personProfileId": {
+      "type": "string"
+    },
+    "scannerDeviceId": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date"
+    },
+    "resolvedBy": {
+      "type": "string"
+    },
+    "resolvedDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "resolutionNotes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Open",
+        "Investigating",
+        "Resolved",
+        "Dismissed"
+      ],
+      "default": "Open"
+    }
+  },
+  "required": [
+    "alertType",
+    "description"
+  ]
+}
