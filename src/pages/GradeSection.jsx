@@ -73,10 +73,10 @@ export default function GradeSection() {
 
   return (
     <div className="space-y-4">
-      <PageTitle>Grade & Section</PageTitle>
+      <PageTitle>Classrooms</PageTitle>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={LayoutGrid} label="Total Classes" value={totalClasses} sub="Across all Grades" />
+        <StatCard icon={LayoutGrid} label="Total Classrooms" value={totalClasses} sub="Across all Classrooms" />
         <StatCard icon={Users} label="Total Students" value={totalStudents.toLocaleString()} sub="Enrolled Students" />
         <StatCard icon={Percent} label="Average Attendance" value="96.4%" sub="Today's Average" />
         <StatCard icon={UserSquare} label="Average Class Size" value={avgClassSize} sub="Students per class" />
@@ -90,7 +90,7 @@ export default function GradeSection() {
             <option>2024-2025</option>
           </KpSelect>
           <SearchInput value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="flex-1" />
-          <KpButton variant="green" onClick={openAdd}><Plus className="w-4 h-4" /> Add Class</KpButton>
+          <KpButton variant="green" onClick={openAdd}><Plus className="w-4 h-4" /> Add Classroom</KpButton>
         </div>
 
         {loading ? (
@@ -102,7 +102,7 @@ export default function GradeSection() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-xs text-gray-400">
-                  <th className="text-left py-3 px-2 font-medium">Class</th>
+                  <th className="text-left py-3 px-2 font-medium">Classroom</th>
                   <th className="text-left py-3 px-2 font-medium">Adviser</th>
                   <th className="text-left py-3 px-2 font-medium">Room</th>
                   <th className="text-left py-3 px-2 font-medium">Students</th>
@@ -138,9 +138,9 @@ export default function GradeSection() {
         {filtered.length > 0 && <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
       </PagePanel>
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={editMode ? 'Edit Class' : 'Create New Class'}>
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={editMode ? 'Edit Classroom' : 'Create New Classroom'}>
         <div className="space-y-4">
-          <p className="text-sm text-gray-500">{editMode ? 'Update class details' : 'Add Class to your School'}</p>
+          <p className="text-sm text-gray-500">{editMode ? 'Update classroom details' : 'Add Classroom to your School'}</p>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Academic Year</label><input value={form.academic_year} onChange={e => setForm({ ...form, academic_year: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>
             <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Grade Level</label><input value={form.grade_level} onChange={e => setForm({ ...form, grade_level: e.target.value })} placeholder="e.g. Grade 1" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>

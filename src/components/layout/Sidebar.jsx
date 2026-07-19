@@ -11,7 +11,7 @@ const navItems = [
   { label: 'User Accounts', path: '/user-accounts', icon: Users },
   { label: 'Faculty & Staff', path: '/employees', icon: GraduationCap },
   { label: 'Students', path: '/students', icon: Contact },
-  { label: 'Grade & Section', path: '/classes', icon: ClipboardList },
+  { label: 'Classrooms', path: '/classes', icon: ClipboardList },
   { label: 'ID Maker', path: '/id-maker', icon: CreditCard },
   { label: 'Attendance', path: '/attendance', icon: BookOpen },
   { label: 'Reports', path: '/reports', icon: FileText },

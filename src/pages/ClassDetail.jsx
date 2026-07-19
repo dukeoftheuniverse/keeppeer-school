@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { PagePanel, KpButton, StatusBadge, Avatar, SearchInput, Pagination, EmptyState } from '@/components/kp/ui';
 import Drawer from '@/components/kp/Drawer';
 import ActionMenu from '@/components/kp/ActionMenu';
+import MassEnrollModal from '@/components/kp/MassEnrollModal';
 import { ArrowLeft, UserPlus, Plus, Trash2, Printer, BookOpen, Calendar, Users, CheckSquare, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { validateTimeOrder, isWithinSchoolHours } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
@@ -27,6 +28,7 @@ export default function ClassDetail() {
   const [subjectDrawer, setSubjectDrawer] = useState(false);
   const [scheduleDrawer, setScheduleDrawer] = useState(false);
   const [addStudentDrawer, setAddStudentDrawer] = useState(false);
+  const [massEnrollOpen, setMassEnrollOpen] = useState(false);
   const [scheduleConflicts, setScheduleConflicts] = useState([]);
   const [subjectForm, setSubjectForm] = useState({ name: '', code: '', description: '', grade_level: '', category: '', teacher_name: '', room: '', color: 'teal' });
   const [scheduleForm, setScheduleForm] = useState({ day: 'Monday', start_time: '08:00', end_time: '09:00', subject_name: '', teacher_name: '', room: '', schedule_type: 'Regular', notes: '', color: 'teal' });
@@ -163,13 +165,13 @@ export default function ClassDetail() {
   return (
     <div className="space-y-4">
       <button onClick={() => navigate('/classes')} className="flex items-center gap-1.5 text-sm text-[hsl(var(--kp-teal))] hover:underline">
-        <ArrowLeft className="w-4 h-4" /> Classes <span className="text-gray-400">/</span> {cls.grade_level} {cls.section}
+        <ArrowLeft className="w-4 h-4" /> Classrooms <span className="text-gray-400">/</span> {cls.grade_level} {cls.section}
       </button>
 
       <PagePanel>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div>
-            <h2 className="text-xl font-bold text-[hsl(var(--kp-teal))]">{cls.grade_level} {cls.section}</h2>
+            <h2 className="text-xl font-bold text-[hsl(var(--kp-teal))]">Classroom: {cls.grade_level} - {cls.section}</h2>
             <p className="text-sm text-gray-500">Adviser: {cls.adviser_name || '—'} • Room: {cls.room || '—'} • {students.length}/{cls.capacity} students</p>
           </div>
         </div>
@@ -188,6 +190,7 @@ export default function ClassDetail() {
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <div className="text-sm font-medium text-[hsl(var(--kp-teal))] py-2">Students ({students.length}/{cls.capacity})</div>
               <SearchInput value={search} onChange={e => setSearch(e.target.value)} className="flex-1" />
+              <KpButton variant="outline" onClick={() => setMassEnrollOpen(true)}><Users className="w-4 h-4" /> Mass Enroll</KpButton>
               <KpButton variant="green" onClick={() => setAddStudentDrawer(true)}><UserPlus className="w-4 h-4" /> Add Student</KpButton>
             </div>
             {currentStudents.length === 0 ? (
@@ -291,7 +294,7 @@ export default function ClassDetail() {
         )}
       </PagePanel>
 
-      <Drawer open={addStudentDrawer} onClose={() => setAddStudentDrawer(false)} title="Add Student to Class">
+      <Drawer open={addStudentDrawer} onClose={() => setAddStudentDrawer(false)} title="Add Student to Classroom">
         <div className="space-y-3">
           <p className="text-sm text-gray-500">Select students from existing records to enroll in {cls.grade_level} {cls.section}.</p>
           {allStudents.filter(s => (s.grade !== cls.grade_level || s.section !== cls.section) && s.enrollment_status !== 'archived').slice(0, 30).map(s => (
@@ -302,6 +305,8 @@ export default function ClassDetail() {
           ))}
         </div>
       </Drawer>
+
+      <MassEnrollModal open={massEnrollOpen} onClose={() => setMassEnrollOpen(false)} classInfo={cls} onDone={load} />
 
       <Drawer open={subjectDrawer} onClose={() => setSubjectDrawer(false)} title="Add New Subject">
         <div className="space-y-3">

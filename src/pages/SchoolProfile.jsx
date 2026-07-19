@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, KpInput, KpSelect } from '@/components/kp/ui';
 import { Upload, Save, Building2, Clock } from 'lucide-react';
+import RolloverTool from '@/components/kp/RolloverTool';
 
 export default function SchoolProfile() {
   const [school, setSchool] = useState(null);
@@ -62,6 +63,7 @@ export default function SchoolProfile() {
         <div className="flex gap-2 mb-6">
           <button onClick={() => setTab('details')} className={`px-4 py-1.5 rounded-lg text-sm font-medium ${tab === 'details' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>School Details</button>
           <button onClick={() => setTab('hours')} className={`px-4 py-1.5 rounded-lg text-sm font-medium ${tab === 'hours' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>School Hours</button>
+          <button onClick={() => setTab('academic')} className={`px-4 py-1.5 rounded-lg text-sm font-medium ${tab === 'academic' ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-white border border-gray-200 text-[hsl(var(--kp-teal))]'}`}>Academic Year</button>
         </div>
 
         {tab === 'details' && (
@@ -96,11 +98,17 @@ export default function SchoolProfile() {
           </div>
         )}
 
+        {tab === 'academic' && (
+          <RolloverTool school={school} onDone={() => {}} />
+        )}
+
+        {tab !== 'academic' && (
         <div className="flex justify-end mt-6">
           <KpButton variant="green" onClick={handleSave} disabled={saving}>
             <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}
           </KpButton>
         </div>
+        )}
       </PagePanel>
     </div>
   );
