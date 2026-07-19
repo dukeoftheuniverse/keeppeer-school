@@ -43,33 +43,5 @@
   },
   "required": [
     "name"
-  ],
-  "rls": {
-    "create": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "teacher"
-          ]
-        }
-      }
-    },
-    "read": {},
-    "update": {
-      "user_condition": {
-        "role": {
-          "$in": [
-            "admin",
-            "teacher"
-          ]
-        }
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
-  }
+  ]
 }
