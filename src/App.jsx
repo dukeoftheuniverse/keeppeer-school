@@ -33,6 +33,9 @@ import ScanRecognizeFace from '@/pages/ScanRecognizeFace';
 import RecordProfilePerson from '@/pages/RecordProfilePerson';
 import RegisteredFaceDatabase from '@/pages/RegisteredFaceDatabase';
 import FacialRecognitionSettings from '@/pages/FacialRecognitionSettings';
+import AttendanceRecords from '@/pages/AttendanceRecords';
+import ScannerDevices from '@/pages/ScannerDevices';
+import FailedRecognitionReview from '@/pages/FailedRecognitionReview';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -86,6 +89,9 @@ const AuthenticatedApp = () => {
           <Route path="/facial-recognition/record" element={<RecordProfilePerson />} />
           <Route path="/facial-recognition/database" element={<RegisteredFaceDatabase />} />
           <Route path="/facial-recognition/settings" element={<FacialRecognitionSettings />} />
+          <Route path="/facial-recognition/attendance" element={<AttendanceRecords />} />
+          <Route path="/facial-recognition/scanners" element={<ScannerDevices />} />
+          <Route path="/facial-recognition/review" element={<FailedRecognitionReview />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

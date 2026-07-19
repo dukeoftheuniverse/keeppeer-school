@@ -66,9 +66,9 @@ export default function FacialRecognitionDashboard() {
     { label: 'Record & Profile Person', desc: 'Enroll new face', icon: UserPlus, color: 'bg-green-500', path: '/facial-recognition/record' },
     { label: 'Scan and Recognize Face', desc: 'Live face scan', icon: ScanFace, color: 'bg-blue-500', path: '/facial-recognition/scan' },
     { label: 'Registered Face Database', desc: 'View all faces', icon: Database, color: 'bg-purple-500', path: '/facial-recognition/database' },
-    { label: 'Attendance Records', desc: 'View transactions', icon: Clock, color: 'bg-orange-500', path: '/facial-recognition/database' },
-    { label: 'Scanner Devices', desc: 'Manage scanners', icon: Monitor, color: 'bg-gray-500', path: '/facial-recognition/settings' },
-    { label: 'Failed Recognition Review', desc: 'Review queue', icon: AlertTriangle, color: 'bg-red-500', path: '/facial-recognition/settings' },
+    { label: 'Attendance Records', desc: 'View transactions', icon: Clock, color: 'bg-orange-500', path: '/facial-recognition/attendance' },
+    { label: 'Scanner Devices', desc: 'Manage scanners', icon: Monitor, color: 'bg-gray-500', path: '/facial-recognition/scanners' },
+    { label: 'Failed Recognition Review', desc: 'Review queue', icon: AlertTriangle, color: 'bg-red-500', path: '/facial-recognition/review' },
     { label: 'Facial Recognition Settings', desc: 'Configure system', icon: Settings, color: 'bg-gray-800', path: '/facial-recognition/settings' },
   ];
 
