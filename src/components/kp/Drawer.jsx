@@ -13,7 +13,7 @@ export default function Drawer({ open, onClose, title, children, width = 'max-w-
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-[100] flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className={cn("relative w-full bg-white shadow-2xl h-full flex flex-col animate-in slide-in-from-right duration-300", width)}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">

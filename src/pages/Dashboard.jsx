@@ -193,7 +193,6 @@ export default function Dashboard() {
             </button>
           </div>
           <AnnouncementList announcements={announcements} maxHeight="260px" />
-          <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} user={user} />
         </PagePanel>
       </div>
 
@@ -268,6 +267,8 @@ export default function Dashboard() {
           </div>
         )}
       </PagePanel>
+
+      <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} user={user} />
     </div>
   );
 }

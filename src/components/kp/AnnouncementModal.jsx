@@ -56,8 +56,8 @@ export default function AnnouncementModal({ open, onClose, onCreated, defaultAud
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="kp-panel rounded-2xl shadow-2xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h3 className="text-base font-bold text-[hsl(var(--kp-teal))] flex items-center gap-2">
             <Megaphone className="w-5 h-5" /> Record Announcement
