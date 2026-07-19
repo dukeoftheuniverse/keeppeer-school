@@ -5,9 +5,6 @@
     "name": {
       "type": "string"
     },
-    "room_code": {
-      "type": "string"
-    },
     "building": {
       "type": "string"
     },
