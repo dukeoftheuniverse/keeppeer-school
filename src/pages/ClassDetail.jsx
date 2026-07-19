@@ -5,6 +5,7 @@ import { PagePanel, KpButton, StatusBadge, Avatar, SearchInput, Pagination, Empt
 import Drawer from '@/components/kp/Drawer';
 import ActionMenu from '@/components/kp/ActionMenu';
 import MassEnrollModal from '@/components/kp/MassEnrollModal';
+import DbCombobox from '@/components/kp/DbCombobox';
 import { ArrowLeft, UserPlus, Plus, Trash2, Printer, BookOpen, Calendar, Users, CheckSquare, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { validateTimeOrder, isWithinSchoolHours } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
@@ -32,6 +33,7 @@ export default function ClassDetail() {
   const [scheduleConflicts, setScheduleConflicts] = useState([]);
   const [subjectForm, setSubjectForm] = useState({ name: '', code: '', description: '', grade_level: '', category: '', teacher_name: '', room: '', color: 'teal' });
   const [scheduleForm, setScheduleForm] = useState({ day: 'Monday', start_time: '08:00', end_time: '09:00', subject_name: '', teacher_name: '', room: '', schedule_type: 'Regular', notes: '', color: 'teal' });
+  const [opts, setOpts] = useState({ names: [], codes: [], categories: [], teachers: [], rooms: [] });
 
   const load = () => {
     setLoading(true);
@@ -50,6 +52,24 @@ export default function ClassDetail() {
   };
 
   useEffect(() => { load(); }, [id]);
+
+  useEffect(() => {
+    Promise.all([
+      base44.entities.Subject.list().catch(() => []),
+      base44.entities.Schedule.list().catch(() => []),
+      base44.entities.Employee.list().catch(() => []),
+      base44.entities.Room.list().catch(() => []),
+    ]).then(([subs, scheds, emps, rooms]) => {
+      const uniq = (arr) => [...new Set(arr.filter(Boolean))];
+      setOpts({
+        names: uniq(subs.map(s => s.name)),
+        codes: uniq(subs.map(s => s.code)),
+        categories: uniq(subs.map(s => s.category)),
+        teachers: uniq([...emps.map(e => `${e.first_name} ${e.last_name}`.trim()), ...subs.map(s => s.teacher_name), ...scheds.map(s => s.teacher_name)]),
+        rooms: uniq([...rooms.map(r => r.name), ...subs.map(s => s.room), ...scheds.map(s => s.room)]),
+      });
+    });
+  }, []);
 
   useEffect(() => {
     if (scheduleDrawer && scheduleForm.subject_name) {
@@ -311,11 +331,11 @@ export default function ClassDetail() {
       <Drawer open={subjectDrawer} onClose={() => setSubjectDrawer(false)} title="Add New Subject">
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Subject Name</label><input value={subjectForm.name} onChange={e => setSubjectForm({ ...subjectForm, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>
-            <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Subject Code</label><input value={subjectForm.code} onChange={e => setSubjectForm({ ...subjectForm, code: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>
-            <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Category</label><input value={subjectForm.category} onChange={e => setSubjectForm({ ...subjectForm, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>
-            <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Teacher</label><input value={subjectForm.teacher_name} onChange={e => setSubjectForm({ ...subjectForm, teacher_name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>
-            <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Room</label><input value={subjectForm.room} onChange={e => setSubjectForm({ ...subjectForm, room: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>
+            <DbCombobox label="Subject Name" value={subjectForm.name} onChange={v => setSubjectForm({ ...subjectForm, name: v })} options={opts.names} placeholder="Search or type subject" />
+            <DbCombobox label="Subject Code" value={subjectForm.code} onChange={v => setSubjectForm({ ...subjectForm, code: v })} options={opts.codes} placeholder="Search or type code" />
+            <DbCombobox label="Category" value={subjectForm.category} onChange={v => setSubjectForm({ ...subjectForm, category: v })} options={opts.categories} placeholder="Search or type category" />
+            <DbCombobox label="Teacher" value={subjectForm.teacher_name} onChange={v => setSubjectForm({ ...subjectForm, teacher_name: v })} options={opts.teachers} placeholder="Search or type teacher" />
+            <DbCombobox label="Room" value={subjectForm.room} onChange={v => setSubjectForm({ ...subjectForm, room: v })} options={opts.rooms} placeholder="Search or type room" />
           </div>
           <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Description</label><textarea value={subjectForm.description} onChange={e => setSubjectForm({ ...subjectForm, description: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>
           <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Display Color</label><div className="flex gap-2 flex-wrap">{Object.entries(colorMap).map(([name, color]) => <button key={name} onClick={() => setSubjectForm({ ...subjectForm, color: name })} className={`w-8 h-8 rounded-full ${subjectForm.color === name ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`} style={{ backgroundColor: color }} />)}</div></div>
@@ -327,11 +347,11 @@ export default function ClassDetail() {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Day</label><select value={scheduleForm.day} onChange={e => setScheduleForm({ ...scheduleForm, day: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">{days.map(d => <option key={d}>{d}</option>)}</select></div>
-            <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Subject</label><select value={scheduleForm.subject_name} onChange={e => setScheduleForm({ ...scheduleForm, subject_name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white"><option value="">Select</option>{subjects.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}</select></div>
+            <DbCombobox label="Subject" value={scheduleForm.subject_name} onChange={v => setScheduleForm({ ...scheduleForm, subject_name: v })} options={subjects.map(s => s.name)} placeholder="Search or type subject" />
             <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Start Time</label><input type="time" value={scheduleForm.start_time} onChange={e => setScheduleForm({ ...scheduleForm, start_time: e.target.value })} className={`w-full px-3 py-2 rounded-lg border text-sm ${scheduleConflicts.some(c => c.field === 'time') ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} /></div>
             <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">End Time</label><input type="time" value={scheduleForm.end_time} onChange={e => setScheduleForm({ ...scheduleForm, end_time: e.target.value })} className={`w-full px-3 py-2 rounded-lg border text-sm ${scheduleConflicts.some(c => c.field === 'time') ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} /></div>
-            <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Teacher</label><input value={scheduleForm.teacher_name} onChange={e => setScheduleForm({ ...scheduleForm, teacher_name: e.target.value })} className={`w-full px-3 py-2 rounded-lg border text-sm ${scheduleConflicts.some(c => c.field === 'teacher') ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} /></div>
-            <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Room</label><input value={scheduleForm.room} onChange={e => setScheduleForm({ ...scheduleForm, room: e.target.value })} className={`w-full px-3 py-2 rounded-lg border text-sm ${scheduleConflicts.some(c => c.field === 'room') ? 'border-red-300 bg-red-50' : 'border-gray-200'}`} /></div>
+            <DbCombobox label="Teacher" value={scheduleForm.teacher_name} onChange={v => setScheduleForm({ ...scheduleForm, teacher_name: v })} options={opts.teachers} error={scheduleConflicts.some(c => c.field === 'teacher')} placeholder="Search or type teacher" />
+            <DbCombobox label="Room" value={scheduleForm.room} onChange={v => setScheduleForm({ ...scheduleForm, room: v })} options={opts.rooms} error={scheduleConflicts.some(c => c.field === 'room')} placeholder="Search or type room" />
           </div>
           <div><label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Notes</label><textarea value={scheduleForm.notes} onChange={e => setScheduleForm({ ...scheduleForm, notes: e.target.value })} rows={2} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" /></div>
 
