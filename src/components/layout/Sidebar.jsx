@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen, FileText, RefreshCw, Cloud } from 'lucide-react';
+import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen, FileText, RefreshCw } from 'lucide-react';
 import { clearRoleChoice } from '@/pages/DashboardRouter';
 
 const navItems = [
@@ -14,8 +14,7 @@ const navItems = [
 { label: 'Classrooms', path: '/classes', icon: ClipboardList },
 { label: 'ID Maker', path: '/id-maker', icon: CreditCard },
 { label: 'Attendance', path: '/attendance', icon: BookOpen },
-{ label: 'Reports', path: '/reports', icon: FileText },
-  { label: 'Classroom Sync', path: '/classroom-sync', icon: Cloud }];
+{ label: 'Reports', path: '/reports', icon: FileText }];
 
 
 export default function Sidebar({ onNavigate }) {

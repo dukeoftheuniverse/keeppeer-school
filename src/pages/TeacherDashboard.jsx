@@ -251,12 +251,12 @@ export default function TeacherDashboard() {
                   <button onClick={() => setShowSchedModal(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><Plus className="w-3.5 h-3.5" /> Add Schedule</button>
                 </div>
                 {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> :
-              <div className="relative pl-6">
+                <div className="relative pl-6">
                   <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
                   {schedules.map((s) => {
-                  const SIcon = subjectIcon(s.subject_name);
-                  return (
-                    <div key={s.id} className="relative mb-3 last:mb-0">
+                    const SIcon = subjectIcon(s.subject_name);
+                    return (
+                      <div key={s.id} className="relative mb-3 last:mb-0">
                         <div className="absolute -left-[18px] top-1 w-3.5 h-3.5 rounded-full bg-[#00BCD4] border-2 border-white shadow" />
                         <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm">
                           <div className="w-9 h-9 rounded-lg bg-[#E0F7FA] flex items-center justify-center shrink-0"><SIcon className="w-4 h-4 text-[#006064]" /></div>
@@ -267,7 +267,7 @@ export default function TeacherDashboard() {
                           <div className="text-xs font-medium text-[#006064] shrink-0">{s.start_time} - {s.end_time}</div>
                         </div>
                       </div>);
-                })}
+                  })}
                 </div>}
               </Card>
 
@@ -283,8 +283,8 @@ export default function TeacherDashboard() {
             {/* My Classroom — full width */}
             <div className="space-y-4">
               <SectionBar icon={GraduationCap} label="My Classroom" action={
-            <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
-            } />
+              <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
+              } />
             {myClasses.length === 0 ?
             <Card><p className="text-sm text-gray-400 text-center py-6">No classes linked yet. Use "Sync Class" to link classes you teach or advise.</p></Card> :
             <div className="flex gap-3 overflow-x-auto kp-scroll-thin pb-2">
@@ -298,7 +298,7 @@ export default function TeacherDashboard() {
                 const borderColors = ['border-[#004D5A]', 'border-[#4CAF50]', 'border-[#2196F3]', 'border-[#B71C1C]'];
                 const bc = borderColors[idx % borderColors.length];
                 return (
-                  <button key={c.id} onClick={() => selectClass(item)} className={`rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all text-2xl bg-gray-50 ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
+                  <button key={c.id} onClick={() => selectClass(item)} className={`bg-white rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all text-2xl ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#004D40] bg-[#E0F7FA] px-2 py-0.5 rounded">Grade {c.grade_level}</span>
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
@@ -311,7 +311,7 @@ export default function TeacherDashboard() {
                     </button>);
               })}
               </div>
-            }
+              }
             </div>
 
             {/* Tabs */}
@@ -461,7 +461,7 @@ export default function TeacherDashboard() {
 }
 
 function Card({ children, className = '' }) {
-  return <div className={`rounded-2xl shadow-md sm:p-5 py-4 opacity-100 bg-[#9ef5ff] ${className}`}>{children}</div>;
+  return <div className={`bg-white rounded-2xl shadow-md sm:p-5 py-4 ${className}`}>{children}</div>;
 }
 function SectionBar({ icon: Icon, label, action }) {
   return (
