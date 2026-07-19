@@ -25,15 +25,50 @@
       "type": "string",
       "default": "#004D5A"
     },
+    "accent_color": {
+      "type": "string",
+      "default": "#2BB5C6"
+    },
+    "font_color": {
+      "type": "string",
+      "default": "#1f2937"
+    },
     "footer_text": {
       "type": "string",
       "default": "Be Respectful. Be Responsible. Be a KeepPeer."
+    },
+    "school_name_override": {
+      "type": "string"
     },
     "logo_url": {
       "type": "string"
     },
     "background_url": {
       "type": "string"
+    },
+    "photo_shape": {
+      "type": "string",
+      "enum": [
+        "circle",
+        "square"
+      ],
+      "default": "circle"
+    },
+    "show_qr": {
+      "type": "boolean",
+      "default": true
+    },
+    "show_photo": {
+      "type": "boolean",
+      "default": true
+    },
+    "show_grade": {
+      "type": "boolean",
+      "default": true
+    },
+    "show_id_number": {
+      "type": "boolean",
+      "default": true
     },
     "expiry_months": {
       "type": "number",

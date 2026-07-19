@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { PagePanel, KpButton, StatusBadge, EmptyState } from '@/components/kp/ui';
 import { Plus, MoreVertical, Upload, Info, Pencil, Trash2, Check, Loader2, Image as ImageIcon, RotateCcw, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { logAudit } from '@/lib/audit';
-import { IDCardFront } from '@/components/kp/IDCardPreview';
+import { IDCardFront, IDCardBack } from '@/components/kp/IDCardPreview';
 
 const SAMPLE_LOGO = 'https://media.base44.com/images/public/6a599666b848d4d07cd0e975/af88c433d_generated_image.png';
 
@@ -103,8 +103,17 @@ export default function TemplateManager() {
       template_type: tab,
       orientation: data.orientation,
       primary_color: data.primary_color,
+      accent_color: data.accent_color,
+      font_color: data.font_color,
       footer_text: data.footer_text,
+      school_name_override: data.school_name_override || '',
       logo_url: data.logo_url || SAMPLE_LOGO,
+      background_url: data.background_url || '',
+      photo_shape: data.photo_shape || 'circle',
+      show_qr: data.show_qr !== false,
+      show_photo: data.show_photo !== false,
+      show_grade: data.show_grade !== false,
+      show_id_number: data.show_id_number !== false,
       expiry_months: data.expiry_months || 12,
       fields: 'name,photo,id,qr',
     });
@@ -138,8 +147,17 @@ export default function TemplateManager() {
         name: data.name,
         orientation: data.orientation,
         primary_color: data.primary_color,
+        accent_color: data.accent_color,
+        font_color: data.font_color,
         footer_text: data.footer_text,
+        school_name_override: data.school_name_override || '',
         background_url: data.background_url || '',
+        logo_url: data.logo_url || SAMPLE_LOGO,
+        photo_shape: data.photo_shape || 'circle',
+        show_qr: data.show_qr !== false,
+        show_photo: data.show_photo !== false,
+        show_grade: data.show_grade !== false,
+        show_id_number: data.show_id_number !== false,
         expiry_months: data.expiry_months || 12,
       });
       logAudit('update_template', 'IDCardTemplate', editing.id, `Updated ${data.name}`);
@@ -224,7 +242,7 @@ export default function TemplateManager() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {filtered.map(tpl => {
-              const theme = { primary_color: tpl.primary_color || '#004D5A', footer_text: tpl.footer_text || 'Be Respectful.', logo_url: tpl.logo_url || SAMPLE_LOGO, orientation: tpl.orientation || 'landscape' };
+              const theme = { primary_color: tpl.primary_color || '#004D5A', accent_color: tpl.accent_color || tpl.primary_color || '#2BB5C6', font_color: tpl.font_color || '#1f2937', footer_text: tpl.footer_text || 'Be Respectful.', logo_url: tpl.logo_url || SAMPLE_LOGO, orientation: tpl.orientation || 'landscape', background_url: tpl.background_url || '', photo_shape: tpl.photo_shape || 'circle', show_qr: tpl.show_qr !== false, show_photo: tpl.show_photo !== false, show_grade: tpl.show_grade !== false, show_id_number: tpl.show_id_number !== false, school_name_override: tpl.school_name_override || '' };
               const sample = { name: 'Juan Dela Cruz', type: tpl.template_type, grade: 'Grade 7', section: 'A', lrn: '13600125001', photo_url: '', qr_id: 'KP-SAMPLE-001' };
               return (
                 <div key={tpl.id} className="relative rounded-xl kp-glass-card overflow-hidden group">
@@ -336,7 +354,6 @@ export default function TemplateManager() {
 
 function CreateTemplateModal({ tab, onClose, onCreate, backgrounds, template }) {
   const isEdit = !!template;
-  // Find matching theme key for an existing color
   const initialThemeKey = template
     ? Object.entries(THEMES).find(([, v]) => v.primary_color.toLowerCase() === (template.primary_color || '').toLowerCase())?.[0] || 'teal'
     : 'blue';
@@ -347,21 +364,64 @@ function CreateTemplateModal({ tab, onClose, onCreate, backgrounds, template }) 
   const [footer, setFooter] = useState(template?.footer_text || THEMES[initialThemeKey].footer_text);
   const [useBg, setUseBg] = useState(template?.background_url ? backgrounds.findIndex(b => b.url === template.background_url) : null);
   const [customColor, setCustomColor] = useState(template && !Object.values(THEMES).some(v => v.primary_color.toLowerCase() === (template.primary_color || '').toLowerCase()) ? template.primary_color : '');
+  const [accentColor, setAccentColor] = useState(template?.accent_color || '');
+  const [fontColor, setFontColor] = useState(template?.font_color || '#1f2937');
+  const [schoolName, setSchoolName] = useState(template?.school_name_override || '');
+  const [logoUrl, setLogoUrl] = useState(template?.logo_url || SAMPLE_LOGO);
+  const [photoShape, setPhotoShape] = useState(template?.photo_shape || 'circle');
+  const [showQr, setShowQr] = useState(template ? template.show_qr !== false : true);
+  const [showPhoto, setShowPhoto] = useState(template ? template.show_photo !== false : true);
+  const [showGrade, setShowGrade] = useState(template ? template.show_grade !== false : true);
+  const [showId, setShowId] = useState(template ? template.show_id_number !== false : true);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const activeColor = customColor || THEMES[theme].primary_color;
+  const resolvedAccent = accentColor || activeColor;
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setLogoUrl(file_url);
+    } catch (err) { /* keep default */ }
+    setUploadingLogo(false);
+  };
 
   const sample = { name: 'Juan Dela Cruz', type: tab, grade: 'Grade 7', section: 'A', lrn: '13600125001', photo_url: '', qr_id: 'KP-SAMPLE-001' };
   const previewTemplate = {
     primary_color: activeColor,
+    accent_color: resolvedAccent,
+    font_color: fontColor,
     footer_text: footer,
-    logo_url: template?.logo_url || SAMPLE_LOGO,
+    school_name_override: schoolName,
+    logo_url: logoUrl,
     orientation,
     background_url: useBg !== null && backgrounds[useBg] ? backgrounds[useBg].url : (template?.background_url || ''),
+    photo_shape: photoShape,
+    show_qr: showQr, show_photo: showPhoto, show_grade: showGrade, show_id_number: showId,
   };
+
+  const ColorSwatch = ({ value, onChange }) => (
+    <div className="relative w-8 h-8 rounded-full border-2 border-gray-200 overflow-hidden shrink-0">
+      <input type="color" value={value} onChange={e => onChange(e.target.value)} className="absolute inset-0 w-full h-full cursor-pointer opacity-0" />
+      <div className="w-full h-full" style={{ background: value }} />
+    </div>
+  );
+
+  const Toggle = ({ checked, onChange, label }) => (
+    <label className="flex items-center justify-between gap-2 cursor-pointer">
+      <span className="text-xs text-gray-600">{label}</span>
+      <button type="button" onClick={() => onChange(!checked)} className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${checked ? 'bg-[hsl(var(--kp-green))]' : 'bg-gray-300'}`}>
+        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-4' : ''}`} />
+      </button>
+    </label>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div className="kp-panel rounded-2xl shadow-xl w-full max-w-3xl p-5 max-h-[90vh] overflow-y-auto kp-scroll-thin" onClick={e => e.stopPropagation()}>
+      <div className="kp-panel rounded-2xl shadow-xl w-full max-w-4xl p-5 max-h-[92vh] overflow-y-auto kp-scroll-thin" onClick={e => e.stopPropagation()}>
         <h3 className="text-base font-bold text-[hsl(var(--kp-teal))] mb-4">{isEdit ? 'Edit' : 'New'} {tab === 'student' ? 'Student' : 'Teacher'} Template</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-3">
@@ -382,24 +442,61 @@ function CreateTemplateModal({ tab, onClose, onCreate, backgrounds, template }) 
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Theme Color</label>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Theme Color (primary)</label>
               <div className="flex gap-2 flex-wrap items-center">
                 {Object.entries(THEMES).map(([key, t]) => (
                   <button key={key} onClick={() => { setTheme(key); setFooter(t.footer_text); setCustomColor(''); }}
                     className={`w-8 h-8 rounded-full border-2 ${(customColor ? '' : theme === key) ? 'border-gray-800' : 'border-transparent'}`}
                     style={{ background: t.primary_color }} title={key} />
                 ))}
-                <div className="relative w-8 h-8 rounded-full border-2 border-gray-200 overflow-hidden">
-                  <input type="color" value={activeColor} onChange={e => setCustomColor(e.target.value)}
-                    className="absolute inset-0 w-full h-full cursor-pointer opacity-0" />
-                  <div className="w-full h-full" style={{ background: activeColor }} />
+                <ColorSwatch value={activeColor} onChange={setCustomColor} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Accent Color</label>
+                <div className="flex items-center gap-2">
+                  <ColorSwatch value={resolvedAccent} onChange={setAccentColor} />
+                  <span className="text-[10px] text-gray-400 font-mono">{resolvedAccent}</span>
                 </div>
               </div>
+              <div>
+                <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Text Color</label>
+                <div className="flex items-center gap-2">
+                  <ColorSwatch value={fontColor} onChange={setFontColor} />
+                  <span className="text-[10px] text-gray-400 font-mono">{fontColor}</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">School Name Override</label>
+              <input value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder="Leave blank to use school profile"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
             </div>
             <div>
               <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Footer Text</label>
               <input value={footer} onChange={e => setFooter(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Logo</label>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
+                  {logoUrl ? <img src={logoUrl} className="w-full h-full object-cover" /> : <ImageIcon className="w-4 h-4 text-gray-400" />}
+                </div>
+                <label className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-[hsl(var(--kp-teal))] hover:bg-gray-50 cursor-pointer">
+                  {uploadingLogo ? <><Loader2 className="w-3 h-3 animate-spin" /> Uploading...</> : <><Upload className="w-3 h-3" /> Upload Logo</>}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                </label>
+                {logoUrl && logoUrl !== SAMPLE_LOGO && <button onClick={() => setLogoUrl(SAMPLE_LOGO)} className="text-xs text-gray-400 hover:text-gray-600">Reset</button>}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Photo Shape</label>
+              <div className="flex gap-2">
+                <button onClick={() => setPhotoShape('circle')} className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium border ${photoShape === 'circle' ? 'border-[hsl(var(--kp-teal))] bg-[hsl(var(--accent))] text-[hsl(var(--kp-teal))]' : 'border-gray-200 text-gray-500'}`}>Circle</button>
+                <button onClick={() => setPhotoShape('square')} className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium border ${photoShape === 'square' ? 'border-[hsl(var(--kp-teal))] bg-[hsl(var(--accent))] text-[hsl(var(--kp-teal))]' : 'border-gray-200 text-gray-500'}`}>Square</button>
+              </div>
             </div>
             <div>
               <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Background (optional)</label>
@@ -414,6 +511,15 @@ function CreateTemplateModal({ tab, onClose, onCreate, backgrounds, template }) 
               </div>
             </div>
             <div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1.5 block">Visible Fields</label>
+              <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-gray-100 bg-gray-50/50">
+                <Toggle checked={showPhoto} onChange={setShowPhoto} label="Photo" />
+                <Toggle checked={showQr} onChange={setShowQr} label="QR Code" />
+                <Toggle checked={showGrade} onChange={setShowGrade} label="Grade / Position" />
+                <Toggle checked={showId} onChange={setShowId} label="ID Number" />
+              </div>
+            </div>
+            <div>
               <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Expiry (months)</label>
               <input type="number" value={expiry} onChange={e => setExpiry(Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
@@ -422,15 +528,24 @@ function CreateTemplateModal({ tab, onClose, onCreate, backgrounds, template }) 
 
           <div>
             <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-2 block">Live Preview</label>
-            <div className="bg-gray-50 rounded-xl p-4">
+            <div className="bg-gray-50 rounded-xl p-4 sticky top-0">
               <IDCardFront person={sample} school={{ school_name: 'KeepPeer Elementary School', academic_year: '2026-2027', school_id: '100567', logo_url: SAMPLE_LOGO }} cardNumber="ID-00000001" template={previewTemplate} />
+              <div className="mt-3">
+                <IDCardBack person={sample} school={{ school_name: 'KeepPeer Elementary School', academic_year: '2026-2027', school_id: '100567', logo_url: SAMPLE_LOGO }} template={previewTemplate} />
+              </div>
             </div>
           </div>
         </div>
 
         <div className="flex gap-2 mt-5 justify-end">
           <KpButton variant="light" onClick={onClose}>Cancel</KpButton>
-          <KpButton variant="green" disabled={!name.trim()} onClick={() => onCreate({ name, primary_color: activeColor, footer_text: footer, orientation, expiry_months: expiry, background_url: useBg !== null && backgrounds[useBg] ? backgrounds[useBg].url : '', logo_url: template?.logo_url || SAMPLE_LOGO })}>{isEdit ? 'Save Changes' : 'Create Template'}</KpButton>
+          <KpButton variant="green" disabled={!name.trim()} onClick={() => onCreate({
+            name, primary_color: activeColor, accent_color: resolvedAccent, font_color: fontColor, footer_text: footer,
+            school_name_override: schoolName, orientation, expiry_months: expiry,
+            background_url: useBg !== null && backgrounds[useBg] ? backgrounds[useBg].url : (template?.background_url || ''),
+            logo_url: logoUrl, photo_shape: photoShape,
+            show_qr: showQr, show_photo: showPhoto, show_grade: showGrade, show_id_number: showId,
+          })}>{isEdit ? 'Save Changes' : 'Create Template'}</KpButton>
         </div>
       </div>
     </div>

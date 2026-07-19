@@ -114,7 +114,21 @@ export default function IDMaker() {
   };
 
   const template = selectedTemplate
-    ? { primary_color: selectedTemplate.primary_color, footer_text: selectedTemplate.footer_text, logo_url: selectedTemplate.logo_url, orientation: selectedTemplate.orientation, background_url: selectedTemplate.background_url }
+    ? {
+        primary_color: selectedTemplate.primary_color,
+        accent_color: selectedTemplate.accent_color || selectedTemplate.primary_color,
+        font_color: selectedTemplate.font_color || '#1f2937',
+        footer_text: selectedTemplate.footer_text,
+        school_name_override: selectedTemplate.school_name_override,
+        logo_url: selectedTemplate.logo_url,
+        orientation: selectedTemplate.orientation,
+        background_url: selectedTemplate.background_url,
+        photo_shape: selectedTemplate.photo_shape || 'circle',
+        show_qr: selectedTemplate.show_qr !== false,
+        show_photo: selectedTemplate.show_photo !== false,
+        show_grade: selectedTemplate.show_grade !== false,
+        show_id_number: selectedTemplate.show_id_number !== false,
+      }
     : { primary_color: '#0056D2', footer_text: 'Be Respectful. Be Responsible. Be a KeepPeer.' };
   const today = new Date().toLocaleDateString('en-CA');
   const todayEntries = todayLogs.filter(a => a.date === today && a.person_type === 'student' && a.scan_type === 'time_in');

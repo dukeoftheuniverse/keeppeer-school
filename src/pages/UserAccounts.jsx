@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, StatusBadge, Avatar, SearchInput, Pagination, EmptyState } from '@/components/kp/ui';
 import Drawer from '@/components/kp/Drawer';
@@ -6,6 +7,7 @@ import ActionMenu from '@/components/kp/ActionMenu';
 import { KeyRound, Settings2, Pencil, Lock, Unlock, Trash2, Check, X } from 'lucide-react';
 
 export default function UserAccounts() {
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -90,7 +92,7 @@ export default function UserAccounts() {
                       <div className="flex items-center gap-2.5">
                         <Avatar name={`${acc.first_name} ${acc.last_name}`} src={acc.photo_url} />
                         <div>
-                          <div className="font-medium text-gray-700">{acc.first_name} {acc.last_name}</div>
+                          <button onClick={() => navigate(`/employee/${acc.id}`)} className="font-medium text-gray-700 hover:text-[hsl(var(--kp-teal))] hover:underline text-left">{acc.first_name} {acc.last_name}</button>
                           <div className="text-xs text-gray-400">{acc.email || '—'}</div>
                         </div>
                       </div>

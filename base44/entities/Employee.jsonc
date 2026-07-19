@@ -23,6 +23,9 @@
     "last_name": {
       "type": "string"
     },
+    "suffix": {
+      "type": "string"
+    },
     "position": {
       "type": "string"
     },
@@ -50,6 +53,66 @@
       "type": "string"
     },
     "mobile_number": {
+      "type": "string"
+    },
+    "gender": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female"
+      ]
+    },
+    "birth_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "birth_place": {
+      "type": "string"
+    },
+    "blood_type": {
+      "type": "string"
+    },
+    "marital_status": {
+      "type": "string",
+      "enum": [
+        "single",
+        "married",
+        "widowed",
+        "separated",
+        "divorced"
+      ]
+    },
+    "residential_address": {
+      "type": "string"
+    },
+    "emergency_contact_name": {
+      "type": "string"
+    },
+    "emergency_contact_number": {
+      "type": "string"
+    },
+    "education": {
+      "type": "string"
+    },
+    "sss_no": {
+      "type": "string"
+    },
+    "philhealth_no": {
+      "type": "string"
+    },
+    "tin_no": {
+      "type": "string"
+    },
+    "pagibig_no": {
+      "type": "string"
+    },
+    "gsis_no": {
+      "type": "string"
+    },
+    "benefits": {
+      "type": "string"
+    },
+    "payroll_info": {
       "type": "string"
     },
     "advisory_class": {

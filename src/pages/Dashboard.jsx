@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, StatusBadge, Avatar } from '@/components/kp/ui';
 import { Users, UserCheck, UserX, Clock, TrendingUp, CloudSun, Shield, Calendar, LogIn, LogOut, Megaphone } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
   return (
@@ -45,7 +45,6 @@ export default function Dashboard() {
   const [now, setNow] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ present: 0, absent: 0, late: 0, totalStudents: 0, studentsIn: 0, studentsOut: 0, teachersIn: 0, teachersOut: 0 });
-  const [enrollment, setEnrollment] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [checkins, setCheckins] = useState([]);
   const [schedule, setSchedule] = useState([]);
@@ -77,9 +76,6 @@ export default function Dashboard() {
         studentsIn: studentIns, studentsOut: students.length - studentIns,
         teachersIn: teacherIns, teachersOut: employees.length - teacherIns,
       });
-      const byGrade = {};
-      students.forEach(s => { const g = s.grade || 'Unassigned'; byGrade[g] = (byGrade[g] || 0) + 1; });
-      setEnrollment(Object.entries(byGrade).map(([grade, count]) => ({ grade, count })));
       setAnnouncements(anns);
       setCheckins(recent);
       setSchedule(sched);
@@ -119,23 +115,58 @@ export default function Dashboard() {
         <PagePanel className="lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-[hsl(var(--kp-teal))]" />
-            <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">Enrollment by Grade</h3>
+            <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">Attendance Overview</h3>
           </div>
           {loading ? (
             <div className="h-64 flex items-center justify-center text-gray-400 text-sm">Loading chart...</div>
-          ) : enrollment.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No enrollment data yet</div>
+          ) : (stats.present + stats.absent + stats.late === 0) ? (
+            <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No attendance data yet today</div>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={enrollment}>
-                <XAxis dataKey="grade" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]} name="Students">
-                  {enrollment.map((_, i) => <Cell key={i} fill={chartColors[i % chartColors.length]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="relative w-56 h-56 shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={[
+                      { name: 'Present', value: stats.present, color: '#009624' },
+                      { name: 'Absent', value: stats.absent, color: '#CC2424' },
+                      { name: 'Late', value: stats.late, color: '#F29339' },
+                    ].filter(d => d.value > 0)} dataKey="value" innerRadius={62} outerRadius={92} paddingAngle={3} startAngle={90} endAngle={-270} stroke="none">
+                      {[
+                        { name: 'Present', color: '#009624' },
+                        { name: 'Absent', color: '#CC2424' },
+                        { name: 'Late', color: '#F29339' },
+                      ].filter(d => stats[d.name.toLowerCase()] > 0).map((d, i) => <Cell key={i} fill={d.color} />)}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="text-3xl font-bold text-[hsl(var(--kp-teal))] leading-none">{stats.present + stats.absent + stats.late}</div>
+                  <div className="text-xs text-gray-400 mt-1">Total Scans</div>
+                </div>
+              </div>
+              <div className="flex-1 space-y-3 w-full">
+                {[
+                  { label: 'Present', value: stats.present, color: '#009624', icon: UserCheck },
+                  { label: 'Absent', value: stats.absent, color: '#CC2424', icon: UserX },
+                  { label: 'Late', value: stats.late, color: '#F29339', icon: Clock },
+                ].map(r => (
+                  <div key={r.label} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${r.color}18` }}>
+                      <r.icon className="w-4 h-4" style={{ color: r.color }} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">{r.label}</span>
+                        <span className="font-semibold text-gray-700">{r.value}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden mt-1">
+                        <div className="h-full rounded-full" style={{ width: `${(stats.present + stats.absent + stats.late) ? (r.value / (stats.present + stats.absent + stats.late)) * 100 : 0}%`, background: r.color }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </PagePanel>
 

@@ -19,6 +19,7 @@ import UserAccounts from '@/pages/UserAccounts';
 import Employees from '@/pages/Employees';
 import Students from '@/pages/Students';
 import StudentProfile from '@/pages/StudentProfile';
+import EmployeeProfile from '@/pages/EmployeeProfile';
 import GradeSection from '@/pages/GradeSection';
 import ClassDetail from '@/pages/ClassDetail';
 import IDMaker from '@/pages/IDMaker';
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
           <Route path="/employees" element={<Employees />} />
           <Route path="/students" element={<Students />} />
           <Route path="/student/:id" element={<StudentProfile />} />
+          <Route path="/employee/:id" element={<EmployeeProfile />} />
           <Route path="/classes" element={<GradeSection />} />
           <Route path="/class/:id" element={<ClassDetail />} />
           <Route path="/id-maker" element={<IDMaker />} />
