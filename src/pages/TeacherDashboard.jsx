@@ -40,6 +40,8 @@ export default function TeacherDashboard() {
   const [myClasses, setMyClasses] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [selectedRole, setSelectedRole] = useState('advisory');
+  const [selectedSubject, setSelectedSubject] = useState('');
   const [todayAtt, setTodayAtt] = useState([]); // today's attendance for selected class
   const [marks, setMarks] = useState({}); // { studentId: 'present'|'late'|'absent' }
   const [expanded, setExpanded] = useState(null);
@@ -78,7 +80,19 @@ export default function TeacherDashboard() {
 
       const fullName = `${me.first_name} ${me.last_name}`;
       const allClasses = await base44.entities.Class.list();
-      const mine = allClasses.filter(c => c.adviser_id === me.id || c.adviser_name === fullName);
+      const classSubs = await base44.entities.ClassSubject.list().catch(() => []);
+      const advisory = allClasses.filter(c => c.adviser_id === me.id || c.adviser_name === fullName).map(c => ({ class: c, role: 'advisory' }));
+      const subject = [];
+      classSubs.forEach(cs => {
+        if (cs.teacher_id === me.id || cs.teacher_name === fullName) {
+          const cls = allClasses.find(c => c.id === cs.class_id);
+          if (cls) subject.push({ class: cls, role: 'subject', subjectName: cs.subject_name });
+        }
+      });
+      const map = new Map();
+      advisory.forEach(x => map.set(x.class.id, x));
+      subject.forEach(x => { if (!map.has(x.class.id)) map.set(x.class.id, x); });
+      const mine = Array.from(map.values());
       setMyClasses(mine);
       if (mine.length) selectClass(mine[0], me);
 
@@ -94,9 +108,13 @@ export default function TeacherDashboard() {
 
   useEffect(() => { load(); }, [load]);
 
-  const selectClass = async (c, meOverride) => {
+  const selectClass = async (item, meOverride) => {
     const me = meOverride || employee;
+    const c = item.class || item;
+    const role = item.role || 'advisory';
     setSelectedClass(c);
+    setSelectedRole(role);
+    setSelectedSubject(item.subjectName || '');
     setExpanded(null);
     const allStudents = await base44.entities.Student.list();
     const studs = allStudents.filter(s => s.grade === c.grade_level && s.section === c.section && s.enrollment_status !== 'archived');
@@ -110,9 +128,15 @@ export default function TeacherDashboard() {
     setScores({});
     // subjects for this class/teacher
     const subs = await base44.entities.ClassSubject.filter({ class_id: c.id }).catch(() => []);
-    const subjList = subs.length ? subs.map(s => s.subject_name) : (schedulesRef(schedules, c).map(s => s.subject_name));
+    let subjList;
+    if (role === 'subject') {
+      subjList = item.subjectName ? [item.subjectName] : subs.map(s => s.subject_name);
+    } else {
+      subjList = subs.length ? subs.map(s => s.subject_name) : schedulesRef(schedules, c).map(s => s.subject_name);
+    }
     setSubjects(subjList.filter(Boolean));
     setGradeSubject(subjList[0] || '');
+    if (role === 'subject') setTab('grades');
   };
 
   const schedulesRef = (scheds, c) => scheds.filter(s => s.class_name?.includes(c.grade_level) && s.class_name?.includes(c.section));
@@ -197,10 +221,12 @@ export default function TeacherDashboard() {
               <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
             } />
             {myClasses.length === 0 ? (
-              <Card><p className="text-sm text-gray-400 text-center py-6">No advisory classes assigned yet. Contact the administrator.</p></Card>
+              <Card><p className="text-sm text-gray-400 text-center py-6">No classes linked yet. Use "Sync Class" to link classes you teach or advise.</p></Card>
             ) : (
               <div className="flex gap-3 overflow-x-auto kp-scroll-thin pb-2">
-                {myClasses.map((c, idx) => {
+                {myClasses.map((item, idx) => {
+                  const c = item.class;
+                  const role = item.role;
                   const count = students.length && selectedClass?.id === c.id ? students.length : c.enrolled_count || 0;
                   const active = selectedClass?.id === c.id;
                   const clsSched = schedules.filter(s => s.class_name?.includes(c.grade_level) && s.class_name?.includes(c.section));
@@ -208,13 +234,14 @@ export default function TeacherDashboard() {
                   const borderColors = ['border-[#004D5A]', 'border-[#4CAF50]', 'border-[#2196F3]', 'border-[#B71C1C]'];
                   const bc = borderColors[idx % borderColors.length];
                   return (
-                    <button key={c.id} onClick={() => selectClass(c)} className={`bg-white rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
+                    <button key={c.id} onClick={() => selectClass(item)} className={`bg-white rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[#004D40] bg-[#E0F7FA] px-2 py-0.5 rounded">Grade {c.grade_level}</span>
-                        <span className={`w-2 h-2 rounded-full ${c.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
                       </div>
                       <div className="text-sm font-bold text-[#004D40] mt-1.5">{c.section}</div>
                       <div className="text-xs text-[#546E7A] mt-1">{count}/{c.capacity || '—'} Students</div>
+                      {role === 'subject' && item.subjectName && <div className="text-[11px] font-semibold text-[#FF8F00] mt-1.5 truncate">{item.subjectName}</div>}
                       {first && <div className="text-[11px] font-semibold text-[#00838F] mt-1.5 truncate">{first.subject_name}</div>}
                       {first && <div className="text-[11px] text-[#546E7A] flex items-center gap-1"><Clock className="w-3 h-3" /> {first.start_time} - {first.end_time}</div>}
                     </button>
@@ -225,7 +252,9 @@ export default function TeacherDashboard() {
 
             {/* Tabs */}
             <div className="flex gap-1.5 bg-white/70 rounded-xl p-1 w-fit">
-              <TabBtn active={tab === 'attendance'} onClick={() => setTab('attendance')} icon={ClipboardList}>Attendance</TabBtn>
+              {selectedRole === 'advisory' && (
+                <TabBtn active={tab === 'attendance'} onClick={() => setTab('attendance')} icon={ClipboardList}>Attendance</TabBtn>
+              )}
               <TabBtn active={tab === 'grades'} onClick={() => setTab('grades')} icon={Award}>Grades / Scores</TabBtn>
             </div>
 
@@ -283,7 +312,9 @@ export default function TeacherDashboard() {
                   </div>
 
                   <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <button onClick={() => setShowAddStudent(true)} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium hover:brightness-110 flex items-center gap-1.5"><Plus className="w-4 h-4" /> Add Student</button>
+                    {selectedRole === 'advisory' && (
+                      <button onClick={() => setShowAddStudent(true)} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium hover:brightness-110 flex items-center gap-1.5"><Plus className="w-4 h-4" /> Add Student</button>
+                    )}
                     <button onClick={handleSaveAttendance} disabled={saving} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium hover:brightness-110 disabled:opacity-50 flex items-center gap-1.5">
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save
                     </button>
