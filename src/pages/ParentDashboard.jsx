@@ -6,7 +6,8 @@ import AnnouncementList from '@/components/kp/AnnouncementList';
 import { logAudit } from '@/lib/audit';
 import {
   Calendar, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon, Megaphone, Award,
-  Clock, Loader2, Plus, QrCode, Trash2, ChevronRight, MapPin, GraduationCap, UserCheck, UserX, CheckCircle2
+  Clock, Loader2, Plus, QrCode, Trash2, ChevronRight, MapPin, GraduationCap, CheckCircle2,
+  ClipboardCheck, BadgeCheck, School as SchoolIcon
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
@@ -40,6 +41,8 @@ export default function ParentDashboard() {
   }, []);
 
   const greeting = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
   const load = useCallback(async () => {
     if (!user?.email) { setLoading(false); return; }
@@ -86,7 +89,7 @@ export default function ParentDashboard() {
     finally { setLinking(false); }
   };
 
-  if (loading) return <div className="kp-site-bg min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-white animate-spin" /></div>;
+  if (loading) return <div className="bg-[#E0F7FA] min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#00838F] animate-spin" /></div>;
 
   const present = attendance.filter(a => a.status === 'present').length;
   const absent = attendance.filter(a => a.status === 'absent').length;
@@ -99,31 +102,38 @@ export default function ParentDashboard() {
   const classAnn = announcements.filter(a => a.audience === 'class' && (!a.target_class || (selected && a.target_class === `${selected.grade} - ${selected.section}`)));
 
   return (
-    <div className="kp-site-bg min-h-screen">
-      <DashHeader greeting={greeting} name="Parent" />
+    <div className="bg-[#E0F7FA] min-h-screen">
+      <DashHeader greeting={greeting} name="Parents" />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
-        {/* Greeting + time (mobile) */}
-        <div className="sm:hidden text-[#004D40]">
-          <div className="text-lg font-bold">{greeting}, Parent</div>
-          <div className="text-xs text-[#546E7A] flex items-center gap-1.5"><Clock className="w-3 h-3" /> {now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}, {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
+        {/* Greeting banner */}
+        <div className="bg-white rounded-2xl shadow-md p-4 sm:p-5 flex items-center gap-4">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#00838F] to-[#00BCD4] flex items-center justify-center shrink-0 shadow-md">
+            <GraduationCap className="w-9 h-9 text-white" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl font-bold text-[#004D40]">{greeting}, Parents</h2>
+            <div className="text-xs sm:text-sm text-[#546E7A] flex items-center gap-1.5 mt-0.5">
+              <Clock className="w-3.5 h-3.5" /> {timeStr}, {dateStr}
+            </div>
+          </div>
         </div>
 
-        {/* My Student */}
+        {/* My Student picker */}
         <SectionBar icon={GraduationCap} label="My Student" />
         <div className="flex gap-3 overflow-x-auto kp-scroll-thin pb-2">
           {children.map(c => {
             const active = selected?.id === c.id;
             return (
-              <button key={c.id} onClick={() => setSelected(c)} className={`bg-white rounded-2xl shadow p-3 min-w-[120px] flex flex-col items-center gap-1.5 border-2 transition-all ${active ? 'border-[#004D5A]' : 'border-transparent hover:border-[#B2EBF2]'}`}>
+              <button key={c.id} onClick={() => setSelected(c)} className={`bg-white rounded-2xl shadow p-3 min-w-[124px] flex flex-col items-center gap-1.5 border-2 transition-all ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/10' : 'border-transparent hover:border-[#B2EBF2]'}`}>
                 <Avatar name={`${c.first_name} ${c.last_name}`} src={c.photo_url} size="w-12 h-12" />
                 <span className="text-xs font-semibold text-[#004D40] truncate max-w-[100px]">{c.nickname || c.first_name}</span>
                 <span className="text-[10px] text-[#546E7A]">{c.grade} - {c.section}</span>
               </button>
             );
           })}
-          <button onClick={() => setShowAdd(true)} className="bg-white/70 rounded-2xl shadow p-3 min-w-[120px] flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-[#00BCD4] text-[#00838F] hover:bg-white">
-            <div className="w-12 h-12 rounded-full bg-[#009624] flex items-center justify-center"><Plus className="w-6 h-6 text-white" /></div>
-            <span className="text-xs font-medium">Add More</span>
+          <button onClick={() => setShowAdd(true)} className="bg-white/70 rounded-2xl shadow p-3 min-w-[124px] flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-[#00BCD4] text-[#00838F] hover:bg-white">
+            <div className="w-12 h-12 rounded-full bg-[#009624] flex items-center justify-center shadow"><QrCode className="w-6 h-6 text-white" /></div>
+            <span className="text-xs font-medium flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add More</span>
           </button>
         </div>
 
@@ -156,19 +166,23 @@ export default function ParentDashboard() {
                 <div className="flex flex-col items-center text-center">
                   <Avatar name={`${selected.first_name} ${selected.last_name}`} src={selected.photo_url} size="w-24 h-24" />
                   <h3 className="text-base font-bold text-[#004D40] mt-2">{selected.first_name} {selected.last_name}</h3>
-                  <div className="text-xs text-[#546E7A] mt-0.5">Enrolled {school?.school_name || 'Labangal Elementary School'}</div>
-                  <div className="text-[11px] text-[#546E7A]">School Year {school?.academic_year || '2026-2027'}</div>
+                  <div className="mt-1 inline-flex items-center gap-1.5 bg-[#E0F7FA] text-[#006064] text-[11px] font-medium px-2.5 py-1 rounded-full">
+                    <SchoolIcon className="w-3.5 h-3.5" /> {school?.school_name || 'Labangal Elementary School'}
+                  </div>
+                  <div className="text-[11px] text-[#546E7A] mt-1">School Year {school?.academic_year || '2026-2027'}</div>
                   <div className="flex gap-1.5 mt-3">
                     {[1, 2, 3, 4, 5].map(i => (
-                      <div key={i} className={`w-7 h-7 rounded-full flex items-center justify-center ${i <= Math.ceil(rate / 20) ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-300'}`}><Award className="w-3.5 h-3.5" /></div>
+                      <div key={i} className={`w-8 h-8 rounded-full flex items-center justify-center ${i <= Math.ceil(rate / 20) ? 'bg-yellow-100 text-yellow-500 ring-1 ring-yellow-300' : 'bg-gray-100 text-gray-300'}`}>
+                        <Award className="w-4 h-4" />
+                      </div>
                     ))}
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <div className="text-xs font-semibold text-[#006064] mb-1.5">Connected Contacts</div>
+                  <div className="text-xs font-semibold text-[#006064] mb-1.5">Connected</div>
                   {[selected.parent_email, user.email].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).map(em => (
                     <div key={em} className="flex items-center justify-between text-xs text-[#546E7A] py-1">
-                      <span className="truncate">{em}</span>
+                      <span className="truncate flex items-center gap-1.5"><BadgeCheck className="w-3.5 h-3.5 text-green-500 shrink-0" /> {em}</span>
                       <Trash2 className="w-3.5 h-3.5 text-gray-300" />
                     </div>
                   ))}
@@ -177,7 +191,7 @@ export default function ParentDashboard() {
               </Card>
 
               <Card className="lg:col-span-2">
-                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><UserCheck className="w-5 h-5 text-[#006064]" /> Attendance Summary</h3>
+                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#006064]" /> Attendance Summary</h3>
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="relative w-40 h-40 shrink-0">
                     <ResponsiveContainer width="100%" height="100%">
@@ -234,20 +248,27 @@ export default function ParentDashboard() {
 
               <Card>
                 <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-[#006064]" /> Attendance Status</h3>
-                <div className={`rounded-xl px-3 py-2 text-sm font-semibold inline-flex items-center gap-1.5 ${selected.inside_status === 'inside' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                  <span className={`w-2 h-2 rounded-full ${selected.inside_status === 'inside' ? 'bg-green-500' : 'bg-gray-400'}`} />
-                  {selected.inside_status === 'inside' ? 'Inside Campus' : 'Outside Campus'}
-                </div>
-                {todayCheckin ? (
-                  <div className="mt-3 space-y-2 text-sm">
-                    <div className="text-green-600 font-semibold">Present</div>
-                    <div className="text-xs text-[#546E7A]">Checked in {todayCheckin.time || '—'}, {new Date(todayCheckin.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                    <div className="text-xs text-[#546E7A]">{selected.grade} - {selected.section}</div>
-                    {todayCheckin.method && <div className="text-[11px] text-gray-400 capitalize">via {todayCheckin.method}</div>}
+                <div className="space-y-2.5">
+                  <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${selected.inside_status === 'inside' ? 'bg-green-50' : 'bg-gray-50'}`}>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${selected.inside_status === 'inside' ? 'bg-green-500' : 'bg-gray-300'}`}>
+                      <ClipboardCheck className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className={`text-sm font-semibold ${selected.inside_status === 'inside' ? 'text-green-700' : 'text-gray-500'}`}>{selected.inside_status === 'inside' ? 'Inside Campus' : 'Outside Campus'}</div>
+                      <div className="text-[11px] text-[#546E7A]">{todayCheckin?.time || '—'} {todayCheckin?.date ? `• ${new Date(todayCheckin.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}` : ''}</div>
+                    </div>
                   </div>
-                ) : (
-                  <p className="mt-3 text-xs text-[#546E7A]">No check-in recorded yet today.</p>
-                )}
+                  <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${todayCheckin ? 'bg-green-50' : 'bg-gray-50'}`}>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${todayCheckin ? 'bg-green-500' : 'bg-gray-300'}`}>
+                      <span className="text-white font-bold text-sm">{todayCheckin ? 'A+' : '—'}</span>
+                    </div>
+                    <div>
+                      <div className={`text-sm font-semibold ${todayCheckin ? 'text-green-700' : 'text-gray-500'}`}>{todayCheckin ? 'Present' : 'Not yet checked in'}</div>
+                      <div className="text-[11px] text-[#546E7A]">{selected.grade} - {selected.section}</div>
+                      {todayCheckin?.confidence_score != null && <div className="text-[11px] text-[#546E7A]">Teacher Advisory</div>}
+                    </div>
+                  </div>
+                </div>
                 <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-[#546E7A] flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#006064]" /> {school?.address || 'Labangal Elementary School'}</div>
               </Card>
             </div>
@@ -255,12 +276,12 @@ export default function ParentDashboard() {
             {/* Announcements */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <Card>
-                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> School Announcements</h3>
+                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> School Announcement</h3>
                 <AnnouncementList announcements={schoolAnn} maxHeight="220px" emptyMessage="No school announcements" />
                 <button className="mt-2 text-xs font-medium text-[#006064] hover:underline flex items-center gap-1">View All Announcements <ChevronRight className="w-3.5 h-3.5" /></button>
               </Card>
               <Card>
-                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-[#006064]" /> Class Announcements</h3>
+                <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><BookOpen className="w-5 h-5 text-[#006064]" /> Class Announcement</h3>
                 <AnnouncementList announcements={classAnn} maxHeight="220px" emptyMessage="No class announcements" />
                 <button className="mt-2 text-xs font-medium text-[#006064] hover:underline flex items-center gap-1">View All Announcements <ChevronRight className="w-3.5 h-3.5" /></button>
               </Card>
