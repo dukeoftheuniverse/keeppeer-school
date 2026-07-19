@@ -8,7 +8,7 @@ import AnnouncementModal from '@/components/kp/AnnouncementModal';
 import StudentProfileView from '@/components/kp/StudentProfileView';
 import AddStudentModal from '@/components/kp/AddStudentModal';
 import SyncClassModal from '@/components/kp/SyncClassModal';
-import GradebookModal from '@/components/kp/GradebookModal';
+import GradebookPanel from '@/components/kp/GradebookPanel';
 import { logAudit } from '@/lib/audit';
 import {
   ClipboardList, GraduationCap, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon,
@@ -52,7 +52,6 @@ export default function TeacherDashboard() {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showSyncClass, setShowSyncClass] = useState(false);
-  const [showGradebook, setShowGradebook] = useState(false);
   const [tab, setTab] = useState('attendance'); // attendance | grades
 
   // grades state
@@ -140,7 +139,7 @@ export default function TeacherDashboard() {
     }
     setSubjects(subjList.filter(Boolean));
     setGradeSubject(subjList[0] || '');
-    if (role === 'subject') setTab('grades');
+    if (role === 'subject') setTab('gradebook');
   };
 
   const schedulesRef = (scheds, c) => scheds.filter(s => s.class_name?.includes(c.grade_level) && s.class_name?.includes(c.section));
@@ -221,19 +220,12 @@ export default function TeacherDashboard() {
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
         {employee ? (
           <>
-            {/* Announcements */}
-            <Card>
-              <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> Announcements</h3>
-              <AnnouncementList announcements={announcements} onAdd={() => setShowAnnModal(true)} addLabel="Record Announcement" maxHeight="220px" />
-            </Card>
-
-            {/* My Classroom */}
-            <SectionBar icon={GraduationCap} label="My Classroom" action={
-              <div className="flex gap-1.5">
-                <button onClick={() => setShowGradebook(true)} disabled={!selectedClass} className="text-xs font-medium text-white bg-[#16A34A] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105 disabled:opacity-50"><ClipboardList className="w-3.5 h-3.5" /> Gradebook</button>
-                <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
-              </div>
-            } />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2 space-y-4">
+                {/* My Classroom */}
+                <SectionBar icon={GraduationCap} label="My Classroom" action={
+                  <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
+                } />
             {myClasses.length === 0 ? (
               <Card><p className="text-sm text-gray-400 text-center py-6">No classes linked yet. Use "Sync Class" to link classes you teach or advise.</p></Card>
             ) : (
@@ -263,13 +255,23 @@ export default function TeacherDashboard() {
                 })}
               </div>
             )}
+              </div>
+
+              {/* Announcements (top right) */}
+              <div className="lg:col-span-1">
+                <Card className="lg:sticky lg:top-4">
+                  <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> Announcements</h3>
+                  <AnnouncementList announcements={announcements} onAdd={() => setShowAnnModal(true)} addLabel="Record Announcement" maxHeight="240px" />
+                </Card>
+              </div>
+            </div>
 
             {/* Tabs */}
-            <div className="flex gap-1.5 bg-white/70 rounded-xl p-1 w-fit">
+            <div className="kp-wave-tabs rounded-xl p-1.5 inline-flex gap-1 w-fit">
               {selectedRole === 'advisory' && (
                 <TabBtn active={tab === 'attendance'} onClick={() => setTab('attendance')} icon={ClipboardList}>Attendance</TabBtn>
               )}
-              <TabBtn active={tab === 'grades'} onClick={() => setTab('grades')} icon={Award}>Grades / Scores</TabBtn>
+              <TabBtn active={tab === 'gradebook'} onClick={() => setTab('gradebook')} icon={Award}>Gradebook</TabBtn>
             </div>
 
             {tab === 'attendance' ? (
@@ -354,61 +356,7 @@ export default function TeacherDashboard() {
                 </Card>
               </div>
             ) : (
-              /* Grades tab */
-              <Card>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                  <h3 className="text-base font-bold text-[#004D40] flex items-center gap-2"><Award className="w-5 h-5 text-[#006064]" /> Record Grades / Scores</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <select value={gradeSubject} onChange={e => setGradeSubject(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
-                      <option value="">Select subject</option>
-                      {subjects.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <select value={quarter} onChange={e => setQuarter(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white">
-                      {['Q1', 'Q2', 'Q3', 'Q4'].map(q => <option key={q} value={q}>{q}</option>)}
-                    </select>
-                  </div>
-                </div>
-                {students.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">Select a class to record grades.</p> : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-100 text-xs text-gray-400">
-                          <th className="text-left py-2 px-2 font-medium">Student</th>
-                          <th className="text-left py-2 px-2 font-medium w-24">Score</th>
-                          <th className="text-left py-2 px-2 font-medium w-24">Total</th>
-                          <th className="text-left py-2 px-2 font-medium w-28">Equivalent</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {students.map(s => {
-                          const sc = scores[s.id] || {};
-                          const score = Number(sc.score) || 0;
-                          const total = Number(sc.total) || 100;
-                          const pct = total ? Math.round((score / total) * 100) : 0;
-                          return (
-                            <tr key={s.id} className="border-b border-gray-50">
-                              <td className="py-2 px-2">
-                                <div className="flex items-center gap-2">
-                                  <Avatar name={`${s.first_name} ${s.last_name}`} src={s.photo_url} size="w-7 h-7" />
-                                  <span className="font-medium text-[#004D40]">{s.first_name} {s.last_name}</span>
-                                </div>
-                              </td>
-                              <td className="py-2 px-2"><input type="number" value={sc.score ?? ''} onChange={e => setScores(p => ({ ...p, [s.id]: { ...p[s.id], score: e.target.value, total: p[s.id]?.total || 100 } }))} className="w-20 px-2 py-1.5 rounded-lg border border-gray-200 text-sm" /></td>
-                              <td className="py-2 px-2"><input type="number" value={sc.total ?? ''} placeholder="100" onChange={e => setScores(p => ({ ...p, [s.id]: { ...p[s.id], total: e.target.value, score: p[s.id]?.score || '' } }))} className="w-20 px-2 py-1.5 rounded-lg border border-gray-200 text-sm" /></td>
-                              <td className="py-2 px-2"><span className={`text-xs font-bold ${pct >= 75 ? 'text-green-600' : 'text-red-600'}`}>{pct}%</span></td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                    <div className="flex justify-end mt-3">
-                      <button onClick={handleSaveGrades} disabled={savingGrades || !gradeSubject} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium hover:brightness-110 disabled:opacity-50 flex items-center gap-1.5">
-                        {savingGrades ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Grades
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </Card>
+              <GradebookPanel classInfo={selectedClass} teacher={employee} role={selectedRole} />
             )}
 
             {/* Today's Class Schedule */}
@@ -461,7 +409,6 @@ export default function TeacherDashboard() {
 
       <AddStudentModal open={showAddStudent} onClose={() => setShowAddStudent(false)} onAdded={() => selectedClass && selectClass(selectedClass)} classInfo={selectedClass} />
       <SyncClassModal open={showSyncClass} onClose={() => setShowSyncClass(false)} onLinked={() => load()} teacher={employee} />
-      <GradebookModal open={showGradebook} onClose={() => setShowGradebook(false)} classInfo={selectedClass} teacher={employee} role={selectedRole} />
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} defaultAudience="class" defaultClass={selectedClass ? `${selectedClass.grade_level} - ${selectedClass.section}` : ''} user={user} />
     </div>
@@ -480,7 +427,7 @@ function SectionBar({ icon: Icon, label, action }) {
   );
 }
 function TabBtn({ active, onClick, icon: Icon, children }) {
-  return <button onClick={onClick} className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all ${active ? 'bg-[#004D5A] text-white' : 'text-[#006064]'}`}><Icon className="w-4 h-4" /> {children}</button>;
+  return <button onClick={onClick} className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all ${active ? 'bg-white/90 text-[#004D5A] shadow' : 'text-white hover:bg-white/20'}`}><Icon className="w-4 h-4" /> {children}</button>;
 }
 function Avatar({ name, src, size = 'w-8 h-8' }) {
   const initials = name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
