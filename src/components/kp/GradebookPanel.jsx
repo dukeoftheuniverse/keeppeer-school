@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Loader2, Save, Award, ClipboardList, Lock } from 'lucide-react';
+import { Loader2, Save, Award, ClipboardList, Lock, Trash2, ListChecks } from 'lucide-react';
 
 const DEFAULT_ACTIVITIES = ['Quiz', 'Summative Test', 'Activity', 'Project', 'Exam', 'Assignment'];
 function loadActivities() {
@@ -88,6 +88,20 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
     setSaving(false);
   };
 
+  const del = async (id) => {
+    if (!window.confirm('Delete this score record?')) return;
+    await base44.entities.Grade.delete(id);
+    const allGrades = await base44.entities.Grade.filter({ class_id: classInfo.id }).catch(() => []);
+    setGrades(allGrades);
+  };
+
+  const clearAll = async () => {
+    if (grades.length === 0) return;
+    if (!window.confirm(`Remove all ${grades.length} score records for this class? This cannot be undone.`)) return;
+    await base44.entities.Grade.deleteMany({ class_id: classInfo.id });
+    setGrades([]);
+  };
+
   const pctColor = (p) => p == null ? 'text-gray-300' : p >= 90 ? 'text-green-600' : p >= 75 ? 'text-[#1E3A8A]' : 'text-red-600';
 
   return (
@@ -166,6 +180,52 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
           </div>
           );
         })()}
+      {/* Score Records — list with delete + striped rows */}
+      <div className="mt-5">
+       <div className="flex items-center justify-between mb-2">
+         <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] flex items-center gap-2"><ListChecks className="w-4 h-4" /> Score Records</h3>
+         {grades.length > 0 && (
+           <button onClick={clearAll} className="text-xs font-medium text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-lg flex items-center gap-1"><Trash2 className="w-3.5 h-3.5" /> Remove All Records</button>
+         )}
+       </div>
+       {grades.length === 0 ? (
+         <p className="text-sm text-gray-400 text-center py-6">No score records yet.</p>
+       ) : (
+         <div className="overflow-auto kp-scroll-thin max-h-[340px] rounded-xl border border-[#B2EBF2]/60">
+           <table className="w-full text-sm">
+             <thead className="sticky top-0 z-10">
+               <tr className="bg-[#00838F] text-white">
+                 <th className="text-left py-2 px-3 font-medium text-xs">Student</th>
+                 <th className="text-left py-2 px-3 font-medium text-xs">Subject</th>
+                 <th className="text-left py-2 px-3 font-medium text-xs">Activity</th>
+                 <th className="text-center py-2 px-3 font-medium text-xs">Score</th>
+                 <th className="text-center py-2 px-3 font-medium text-xs">%</th>
+                 <th className="text-left py-2 px-3 font-medium text-xs">Date</th>
+                 <th className="text-center py-2 px-3 font-medium text-xs w-10"></th>
+               </tr>
+             </thead>
+             <tbody>
+               {grades.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((g, i) => {
+                 const pct = g.total ? Math.round((g.score / g.total) * 100) : 0;
+                 return (
+                   <tr key={g.id} className={`border-b border-[#B2EBF2]/30 ${i % 2 === 0 ? 'bg-[#E0F7FA]/60' : 'bg-white/70'}`}>
+                     <td className="py-2 px-3 font-medium text-[hsl(var(--kp-teal))] truncate">{g.student_name || '—'}</td>
+                     <td className="py-2 px-3 text-gray-600 truncate">{g.subject_name || '—'}</td>
+                     <td className="py-2 px-3 text-gray-500 truncate">{g.activity_type || '—'}</td>
+                     <td className="py-2 px-3 text-center font-semibold text-[hsl(var(--kp-teal))]">{g.score}/{g.total}</td>
+                     <td className="py-2 px-3 text-center"><span className={`text-xs font-bold ${pctColor(pct)}`}>{pct}%</span></td>
+                     <td className="py-2 px-3 text-gray-400 text-xs">{g.date || '—'}</td>
+                     <td className="py-2 px-3 text-center">
+                       <button onClick={() => del(g.id)} className="text-red-500 hover:bg-red-100 rounded-md p-1" title="Delete record"><Trash2 className="w-3.5 h-3.5" /></button>
+                     </td>
+                   </tr>
+                 );
+               })}
+             </tbody>
+           </table>
+         </div>
+       )}
+      </div>
       <div className="text-[11px] text-gray-400 mt-2">Cell values show the average of recorded scores per subject. Detailed per-student scores live in the Score Board (click a student name).</div>
     </div>
   );
