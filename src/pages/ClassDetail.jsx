@@ -21,6 +21,7 @@ export default function ClassDetail() {
   const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [allSchedules, setAllSchedules] = useState([]);
   const [allStudents, setAllStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('students');
@@ -42,12 +43,14 @@ export default function ClassDetail() {
       base44.entities.Student.list(),
       base44.entities.Subject.filter({ class_id: id }).catch(() => []),
       base44.entities.Schedule.filter({ class_id: id }).catch(() => []),
-    ]).then(([c, s, subs, sched]) => {
+      base44.entities.Schedule.list().catch(() => []),
+    ]).then(([c, s, subs, sched, allSched]) => {
       setCls(c);
       setAllStudents(s);
       setStudents(s.filter(st => st.grade === c.grade_level && st.section === c.section && st.enrollment_status === 'enrolled'));
       setSubjects(subs);
       setSchedules(sched);
+      setAllSchedules(allSched);
     }).finally(() => setLoading(false));
   };
 
@@ -78,7 +81,7 @@ export default function ClassDetail() {
     } else {
       setScheduleConflicts([]);
     }
-  }, [scheduleForm, scheduleDrawer, schedules]);
+  }, [scheduleForm, scheduleDrawer, allSchedules]);
 
   const filteredStudents = students.filter(s => `${s.first_name} ${s.last_name}`.toLowerCase().includes(search.toLowerCase()));
   const totalPages = Math.ceil(filteredStudents.length / 10) || 1;
@@ -93,18 +96,18 @@ export default function ClassDetail() {
       conflicts.push({ field: 'time', message: 'Schedule is outside school hours (07:00 - 17:00).' });
     }
     const overlaps = (a_start, a_end, b_start, b_end) => !(a_start >= b_end || a_end <= b_start);
-    const sameSection = schedules.filter(s => s.day === form.day && s.class_id === id && overlaps(form.start_time, form.end_time, s.start_time, s.end_time));
+    const sameSection = allSchedules.filter(s => s.day === form.day && s.class_id === id && overlaps(form.start_time, form.end_time, s.start_time, s.end_time));
     if (sameSection.length > 0) {
       conflicts.push({ field: 'section', message: `Section already occupied by ${sameSection[0].subject_name} at ${sameSection[0].start_time}-${sameSection[0].end_time}.` });
     }
     if (form.teacher_name) {
-      const teacherConflict = schedules.filter(s => s.day === form.day && s.teacher_name === form.teacher_name && overlaps(form.start_time, form.end_time, s.start_time, s.end_time));
+      const teacherConflict = allSchedules.filter(s => s.day === form.day && s.teacher_name === form.teacher_name && overlaps(form.start_time, form.end_time, s.start_time, s.end_time));
       if (teacherConflict.length > 0) {
         conflicts.push({ field: 'teacher', message: `Teacher ${form.teacher_name} is in ${teacherConflict[0].class_name} (${teacherConflict[0].subject_name}) at ${teacherConflict[0].start_time}.` });
       }
     }
     if (form.room) {
-      const roomConflict = schedules.filter(s => s.day === form.day && s.room === form.room && s.class_id !== id && overlaps(form.start_time, form.end_time, s.start_time, s.end_time));
+      const roomConflict = allSchedules.filter(s => s.day === form.day && s.room === form.room && s.class_id !== id && overlaps(form.start_time, form.end_time, s.start_time, s.end_time));
       if (roomConflict.length > 0) {
         conflicts.push({ field: 'room', message: `Room ${form.room} is occupied by ${roomConflict[0].class_name} at ${roomConflict[0].start_time}.` });
       }

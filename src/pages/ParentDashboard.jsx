@@ -30,6 +30,7 @@ export default function ParentDashboard() {
   const [attendance, setAttendance] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [grades, setGrades] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [lrnInput, setLrnInput] = useState('');
   const [linking, setLinking] = useState(false);
@@ -66,6 +67,7 @@ export default function ParentDashboard() {
   useEffect(() => {
     if (!selected) return;
     base44.entities.Attendance.filter({ person_id: selected.id }).then(setAttendance).catch(() => setAttendance([]));
+    base44.entities.Grade.filter({ student_id: selected.id }).then(setGrades).catch(() => setGrades([]));
     const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     base44.entities.Schedule.filter({ day: dayName }).then(all => {
       setSchedules(all.filter(s => s.class_name?.includes(selected.grade) && s.class_name?.includes(selected.section)));
@@ -272,6 +274,31 @@ export default function ParentDashboard() {
                 <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-[#546E7A] flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#006064]" /> {school?.address || 'Labangal Elementary School'}</div>
               </Card>
             </div>
+
+            {/* Latest Grades */}
+            <Card>
+              <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Award className="w-5 h-5 text-[#006064]" /> Latest Grades</h3>
+              {grades.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No grades recorded yet.</p> : (
+                <div className="space-y-2">
+                  {grades.slice(0, 8).map(g => {
+                    const pct = g.total ? Math.round((g.score / g.total) * 100) : 0;
+                    return (
+                      <div key={g.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-[#E0F7FA] flex items-center justify-center shrink-0"><Award className="w-4 h-4 text-[#006064]" /></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-[#004D40] truncate">{g.subject_name}</div>
+                          <div className="text-[11px] text-[#546E7A]">{g.quarter} • {g.teacher_name ? `Teacher ${g.teacher_name.split(' ')[0]}` : ''}</div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-sm font-bold text-[#004D40]">{g.score}/{g.total}</div>
+                          <div className={`text-[11px] font-semibold ${pct >= 75 ? 'text-green-600' : 'text-red-600'}`}>{pct}%{g.remarks ? ` • ${g.remarks}` : ''}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
 
             {/* Announcements */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

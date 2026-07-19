@@ -128,9 +128,11 @@ export default function TeacherDashboard() {
     setScores({});
     // subjects for this class/teacher
     const subs = await base44.entities.ClassSubject.filter({ class_id: c.id }).catch(() => []);
+    const fullName = me ? `${me.first_name} ${me.last_name}` : '';
+    const mySubs = subs.filter(s => s.teacher_id === me?.id || s.teacher_name === fullName);
     let subjList;
     if (role === 'subject') {
-      subjList = item.subjectName ? [item.subjectName] : subs.map(s => s.subject_name);
+      subjList = item.subjectName ? [item.subjectName] : mySubs.map(s => s.subject_name);
     } else {
       subjList = subs.length ? subs.map(s => s.subject_name) : schedulesRef(schedules, c).map(s => s.subject_name);
     }
@@ -180,6 +182,7 @@ export default function TeacherDashboard() {
 
   const handleSaveGrades = async () => {
     if (!selectedClass || !gradeSubject) return;
+    if (!subjects.includes(gradeSubject)) { alert('You are not authorized to record grades for this subject. Only the assigned teacher may record it.'); return; }
     setSavingGrades(true);
     const today = new Date().toLocaleDateString('en-CA');
     const fullName = employee ? `${employee.first_name} ${employee.last_name}` : '';
