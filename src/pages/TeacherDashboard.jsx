@@ -289,27 +289,39 @@ export default function TeacherDashboard() {
             {tab === 'attendance' ?
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Attendance panel */}
-                <Card className="lg:col-span-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <ClipboardList className="w-5 h-5 text-[#006064]" />
-                    <h3 className="text-base font-bold text-[#004D40]">Attendance</h3>
-                  </div>
-                  <div className="text-sm font-semibold text-white bg-[#006064] rounded-lg px-3 py-1.5 mb-3">
-                    {selectedClass ? `Grade ${selectedClass.grade_level} - ${selectedClass.section}` : 'Select a class'}
+                <div className="lg:col-span-2 kp-glass-card rounded-2xl p-4 sm:p-5 flex flex-col">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-[hsl(var(--kp-teal))] flex items-center justify-center shrink-0">
+                        <ClipboardList className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-bold text-[#004D40] leading-tight">Attendance</h3>
+                        <div className="text-xs font-semibold text-white bg-[#006064] inline-flex px-2 py-0.5 rounded-md truncate max-w-[220px]">
+                          {selectedClass ? `Grade ${selectedClass.grade_level} - ${selectedClass.section}` : 'Select a class'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="relative w-40 sm:w-56 shrink-0">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search student..." className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm bg-white/70" />
+                    </div>
                   </div>
 
-                  <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search student..." className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm" />
+                  <div className="flex items-center gap-2 px-1 pb-2 text-[10px] font-semibold uppercase tracking-wide text-[#546E7A]">
+                    <span className="w-8 shrink-0" />
+                    <span className="flex-1">Student</span>
+                    <span className="hidden sm:block w-28 text-right">Status</span>
+                    <span className="w-2.5" />
                   </div>
 
-                  <div className="space-y-1.5 max-h-[340px] overflow-y-auto kp-scroll-thin pr-1">
+                  <div className="space-y-1.5 flex-1 max-h-[360px] overflow-y-auto kp-scroll-thin pr-1">
                     {students.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No students enrolled in this class.</p> :
                 students.filter((s) => `${s.first_name} ${s.last_name} ${s.lrn || ''}`.toLowerCase().includes(query.toLowerCase())).map((s) => {
                   const mk = marks[s.id];
                   const isExpanded = expanded === s.id;
                   return (
-                    <div key={s.id} className="rounded-xl border border-gray-100 overflow-hidden">
+                    <div key={s.id} className="rounded-xl border border-gray-100 overflow-hidden bg-white/50">
                             <button onClick={() => setExpanded(isExpanded ? null : s.id)} className="w-full flex items-center gap-3 p-2.5 hover:bg-gray-50 text-left">
                               <div onClick={(e) => {e.stopPropagation();setProfileStudent(s);}} className="cursor-pointer rounded-full ring-2 ring-transparent hover:ring-[#00BCD4] transition" title="View profile">
                                 <Avatar name={`${s.first_name} ${s.last_name}`} src={s.photo_url} />
@@ -318,19 +330,19 @@ export default function TeacherDashboard() {
                                 <div className="text-sm font-semibold text-[#004D40] truncate hover:underline decoration-[#00BCD4] decoration-2 underline-offset-2">{s.first_name} {s.last_name} {s.suffix || ''}</div>
                                 <div className="text-[11px] text-[#546E7A] font-mono">{s.lrn || s.student_id || '—'}</div>
                               </div>
-                              <span className={`w-2.5 h-2.5 rounded-full ${mk === 'present' ? 'bg-green-500' : mk === 'late' ? 'bg-orange-500' : mk === 'absent' ? 'bg-red-500' : 'bg-gray-300'}`} />
-                              <span className="text-[11px] text-[#546E7A] hidden sm:block">{s.inside_status === 'inside' ? 'Inside the Campus' : 'Outside'}</span>
+                              <span className="hidden sm:block text-[11px] text-[#546E7A] w-28 text-right capitalize">{mk || '—'}</span>
+                              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${mk === 'present' ? 'bg-green-500' : mk === 'late' ? 'bg-orange-500' : mk === 'absent' ? 'bg-red-500' : 'bg-gray-300'}`} />
                             </button>
                             {isExpanded &&
                       <div className="px-3 pb-3 bg-[#E0F7FA]/40">
                                 <div className="text-[11px] font-semibold text-[#006064] mb-1.5">Select Attendance Status</div>
                                 <div className="flex flex-wrap gap-2">
                                   {STATUS_OPT.map((o) =>
-                          <button key={o.key} onClick={() => {setMarks((prev) => ({ ...prev, [s.id]: o.key }));setExpanded(null);}}
-                          className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all ${o.bg} ${mk === o.key ? 'ring-2 ring-offset-1 ring-current' : 'opacity-80 hover:opacity-100'}`}>
+                           <button key={o.key} onClick={() => {setMarks((prev) => ({ ...prev, [s.id]: o.key }));setExpanded(null);}}
+                           className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-all ${o.bg} ${mk === o.key ? 'ring-2 ring-offset-1 ring-current' : 'opacity-80 hover:opacity-100'}`}>
                                       {o.label}
                                     </button>
-                          )}
+                           )}
                                 </div>
                               </div>
                       }
@@ -344,29 +356,32 @@ export default function TeacherDashboard() {
                 <button onClick={() => setShowAddStudent(true)} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium hover:brightness-110 flex items-center gap-1.5"><Plus className="w-4 h-4" /> Add Student</button>
                 }
                     <button onClick={printAttendance} disabled={!selectedClass} className="px-4 py-2 rounded-lg bg-white border border-[#00838F] text-[#00838F] text-sm font-medium hover:bg-[#E0F7FA] flex items-center gap-1.5 disabled:opacity-50"><Printer className="w-4 h-4" /> Print</button>
-                    <button onClick={handleSaveAttendance} disabled={saving} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium hover:brightness-110 disabled:opacity-50 flex items-center gap-1.5">
+                    <button onClick={handleSaveAttendance} disabled={saving} className="px-4 py-2 rounded-lg bg-[hsl(var(--kp-green))] text-white text-sm font-medium hover:brightness-110 disabled:opacity-50 flex items-center gap-1.5">
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save
                     </button>
                   </div>
-                </Card>
+                </div>
 
                 {/* Attendance Stats */}
-                <Card>
-                  <h3 className="text-base font-bold text-[#004D40] mb-3">Attendance Summary</h3>
+                <div className="kp-glass-card rounded-2xl p-4 sm:p-5 flex flex-col">
+                  <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Users className="w-4 h-4 text-[#006064]" /> Attendance Summary</h3>
                   <div className="grid grid-cols-3 gap-2">
                     <StatBox icon={UserCheck} label="Present" value={present} pct={totalMarked ? Math.round(present / totalMarked * 100) : 0} color="#009624" />
                     <StatBox icon={UserX} label="Absent" value={absent} pct={totalMarked ? Math.round(absent / totalMarked * 100) : 0} color="#CC2424" />
                     <StatBox icon={Clock} label="Late" value={late} pct={totalMarked ? Math.round(late / totalMarked * 100) : 0} color="#F29339" />
                   </div>
-                  <div className="mt-4 rounded-xl bg-[#E0F7FA] p-3 text-xs text-[#006064]">
+                  <div className="mt-3 h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-[#009624] via-[#F29339] to-[#CC2424] transition-all" style={{ width: `${students.length ? Math.round(totalMarked / students.length * 100) : 0}%` }} />
+                  </div>
+                  <div className="mt-2 rounded-xl bg-[#E0F7FA] p-3 text-xs text-[#006064]">
                     <div className="font-semibold mb-0.5">{totalMarked}/{students.length} marked today</div>
                     <div className="text-[#546E7A]">{students.length - totalMarked} students remaining.</div>
                   </div>
-                  <div className="mt-4">
+                  <div className="mt-4 pt-3 border-t border-gray-100">
                     <h4 className="text-sm font-bold text-[#004D40] mb-2 flex items-center gap-1.5"><CloudSun className="w-4 h-4" /> Weather & Safety</h4>
                     <WeatherMonitor compact />
                   </div>
-                </Card>
+                </div>
               </div> :
 
           <GradebookPanel classInfo={selectedClass} teacher={employee} role={selectedRole} onStudentClick={(s) => setProfileStudent(s)} />
