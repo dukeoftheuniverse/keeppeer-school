@@ -16,6 +16,8 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   const [grades, setGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState('');
+  const [assessmentName, setAssessmentName] = useState('');
+  const [category, setCategory] = useState('Written Work');
   const [score, setScore] = useState('');
   const [total, setTotal] = useState(100);
   const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'));
@@ -71,6 +73,8 @@ export default function StudentProfileView({ student, school, classInfo, teacher
       class_id: classInfo?.id,
       class_name: classInfo ? `${classInfo.grade_level} - ${classInfo.section}` : '',
       subject_name: subjectName || activity.trim(),
+      category: category,
+      assessment_name: assessmentName.trim(),
       activity_type: activity.trim(),
       teacher_id: teacher?.id,
       teacher_name: teacher ? `${teacher.first_name} ${teacher.last_name}` : '',
@@ -80,7 +84,7 @@ export default function StudentProfileView({ student, school, classInfo, teacher
       date,
       visible_to_parent: true,
     });
-    setActivity(''); setScore(''); setTotal(100);
+    setActivity(''); setScore(''); setTotal(100); setAssessmentName('');
     await reload();
     setSaving(false);
   };
@@ -107,6 +111,25 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   };
 
   const statusColor = (s) => s === 'present' ? 'text-green-600' : s === 'late' ? 'text-orange-500' : 'text-red-500';
+
+  // Category-based grade computation for the score board
+  const CATEGORIES = ['Written Work', 'Performance Task', 'Quarterly Assessment'];
+  const WEIGHTS = { 'Written Work': 0.3, 'Performance Task': 0.5, 'Quarterly Assessment': 0.2 };
+  const catScores = (cat) => grades.filter(g => g.category === cat);
+  const catAvg = (cat) => {
+    const recs = catScores(cat);
+    if (!recs.length) return null;
+    const pcts = recs.map(g => g.total ? (g.score / g.total) * 100 : 0);
+    return Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
+  };
+  const finalGrade = () => {
+    const parts = []; const weights = [];
+    CATEGORIES.forEach(c => { const v = catAvg(c); if (v != null) { parts.push(v * WEIGHTS[c]); weights.push(WEIGHTS[c]); } });
+    if (!parts.length) return null;
+    return Math.round(parts.reduce((a, b) => a + b, 0) / weights.reduce((a, b) => a + b, 0));
+  };
+  const fg = finalGrade();
+  const remark = fg == null ? { label: 'Incomplete', cls: 'bg-orange-100 text-orange-700' } : fg >= 75 ? { label: 'Passed', cls: 'bg-green-100 text-green-700' } : { label: 'Failed', cls: 'bg-red-100 text-red-700' };
 
   return (
     <div className="fixed inset-0 z-[100] kp-dash-bg overflow-y-auto kp-scroll-thin">
@@ -215,60 +238,95 @@ export default function StudentProfileView({ student, school, classInfo, teacher
             {tab === 'score' ? (
               <div>
                 <div className="flex items-center gap-2 mb-4">
-                  <ClipboardList className="w-7 h-7 text-[#16A34A]" />
-                  <h3 className="text-2xl font-bold text-[#16A34A]">Score board</h3>
+                  <ClipboardList className="w-6 h-6 text-[#16A34A]" />
+                  <h3 className="text-lg font-bold text-[#16A34A]">Score Board</h3>
                 </div>
 
-                <div className="bg-[#E8F9FB] rounded-2xl p-4 space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-[#0F766E] block mb-1">Activity</label>
-                    <input list="kp-activities" value={activity} onChange={e => setActivity(e.target.value)} placeholder="Select or type activity..." className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20" />
-                    <datalist id="kp-activities">
-                      <option>Quiz</option>
-                      <option>Summative Test</option>
-                      <option>Activity</option>
-                      <option>Project</option>
-                      <option>Exam</option>
-                      <option>Assignment</option>
-                    </datalist>
+                {/* Category summary */}
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {CATEGORIES.map(c => (
+                    <div key={c} className="rounded-xl bg-[#E8F9FB] border border-[#B2EBF2] p-2.5 text-center">
+                      <div className="text-[10px] font-medium text-[#0F766E] leading-tight mb-1">{c}</div>
+                      <div className="text-lg font-bold text-[#16A34A]">{catAvg(c) ?? '—'}</div>
+                    </div>
+                  ))}
+                  <div className="rounded-xl bg-[#16A34A] p-2.5 text-center">
+                    <div className="text-[10px] font-medium text-white/80 leading-tight mb-1">Final Grade</div>
+                    <div className="text-lg font-bold text-white">{fg ?? '—'}</div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                </div>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <span className="text-xs text-gray-500">Remarks:</span>
+                  <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold ${remark.cls}`}>{remark.label}</span>
+                </div>
+
+                {/* Record form */}
+                <div className="kp-panel-translucent rounded-2xl p-4 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                      <label className="text-sm font-medium text-[#0F766E] block mb-1">Score</label>
-                      <input type="number" value={score} onChange={e => setScore(e.target.value)} placeholder="40" className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm" />
+                      <label className="text-xs font-medium text-[#0F766E] block mb-1">Category</label>
+                      <select value={category} onChange={e => setCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm">
+                        <option>Written Work</option><option>Performance Task</option><option>Quarterly Assessment</option>
+                      </select>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-[#0F766E] block mb-1">Total</label>
-                      <input type="number" value={total} onChange={e => setTotal(e.target.value)} placeholder="50" className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm" />
+                      <label className="text-xs font-medium text-[#0F766E] block mb-1">Assessment Name</label>
+                      <input value={assessmentName} onChange={e => setAssessmentName(e.target.value)} placeholder="e.g. Quiz 1" className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-[#0F766E] block mb-1">Date</label>
-                      <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm" />
+                      <label className="text-xs font-medium text-[#0F766E] block mb-1">Activity Type</label>
+                      <input list="kp-activities" value={activity} onChange={e => setActivity(e.target.value)} placeholder="Quiz, Exam, Project..." className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm" />
+                      <datalist id="kp-activities">
+                        <option>Quiz</option><option>Exam</option><option>Assignment</option>
+                        <option>Project</option><option>Activity</option><option>Recitation</option><option>Performance</option><option>Quarterly Exam</option>
+                      </datalist>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-[#0F766E] block mb-1">Date</label>
+                      <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-[#0F766E] block mb-1">Score Obtained</label>
+                      <input type="number" value={score} onChange={e => setScore(e.target.value)} placeholder="8" className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-[#0F766E] block mb-1">Highest Score</label>
+                      <input type="number" value={total} onChange={e => setTotal(e.target.value)} placeholder="10" className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm" />
                     </div>
                   </div>
-                  <button onClick={saveScore} disabled={saving || !activity} className="w-full py-2.5 rounded-full bg-[#16A34A] text-white text-sm font-semibold hover:brightness-105 disabled:opacity-50 flex items-center justify-center gap-1.5">
+                  <button onClick={saveScore} disabled={saving || !activity} className="w-full py-2.5 rounded-lg bg-[#16A34A] text-white text-sm font-semibold hover:brightness-105 disabled:opacity-50 flex items-center justify-center gap-1.5">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Score
                   </button>
                 </div>
 
-                <div className="mt-4 space-y-2.5">
-                  {grades.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No scores recorded yet.</p> :
-                    grades.map(g => (
-                      <div key={g.id} className="bg-[#CBEAF4] rounded-xl px-4 py-3 flex items-center justify-between">
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-[#1E3A8A] truncate">{g.activity_type || g.subject_name}</div>
-                          <div className="text-xs text-[#374151]">{g.date ? new Date(g.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}</div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-sm font-bold text-[#1F2937]">{g.score}/{g.total}</span>
-                          <button onClick={() => toggleVisible(g)} title={g.visible_to_parent === false ? 'Hidden from parents' : 'Visible to parents'} className={`hover:text-[#0F766E] ${g.visible_to_parent === false ? 'text-gray-300' : 'text-[#0F766E]'}`}>
-                            {g.visible_to_parent === false ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                          <button onClick={() => deleteGrade(g.id)} className="text-[#6B7280] hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                {/* All scores by category */}
+                {grades.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No scores recorded yet.</p> :
+                  CATEGORIES.map(cat => {
+                    const recs = catScores(cat);
+                    if (!recs.length) return null;
+                    return (
+                      <div key={cat} className="mt-4">
+                        <div className="text-xs font-semibold text-[#0F766E] mb-1.5">{cat} <span className="text-gray-400">({recs.length})</span></div>
+                        <div className="space-y-1.5">
+                          {recs.map(g => (
+                            <div key={g.id} className="bg-[#E8F9FB] rounded-lg px-3 py-2.5 flex items-center justify-between">
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-[#1E3A8A] truncate">{g.assessment_name || g.activity_type || g.subject_name}</div>
+                                <div className="text-[11px] text-[#374151]">{g.subject_name}{g.date ? ` • ${new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</div>
+                              </div>
+                              <div className="flex items-center gap-2.5 shrink-0">
+                                <span className="text-sm font-bold text-[#1F2937]">{g.score}/{g.total}</span>
+                                <button onClick={() => toggleVisible(g)} title={g.visible_to_parent === false ? 'Hidden from parents' : 'Visible to parents'} className={`hover:text-[#0F766E] ${g.visible_to_parent === false ? 'text-gray-300' : 'text-[#0F766E]'}`}>
+                                  {g.visible_to_parent === false ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                                <button onClick={() => deleteGrade(g.id)} className="text-[#6B7280] hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                </div>
+                    );
+                  })}
               </div>
             ) : (
               <div>

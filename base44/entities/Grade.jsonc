@@ -17,9 +17,22 @@
     "subject_name": {
       "type": "string"
     },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Written Work",
+        "Performance Task",
+        "Quarterly Assessment"
+      ],
+      "description": "Grading component category (DepEd components)"
+    },
+    "assessment_name": {
+      "type": "string",
+      "description": "Name of the specific assessment (e.g. Quiz 1, Project 2)"
+    },
     "activity_type": {
       "type": "string",
-      "description": "Type of assessment recorded (Quiz, Summative Test, Activity, Project, Exam, Assignment, or custom)"
+      "description": "Type of assessment recorded (Quiz, Exam, Assignment, Project, etc.)"
     },
     "teacher_id": {
       "type": "string"
