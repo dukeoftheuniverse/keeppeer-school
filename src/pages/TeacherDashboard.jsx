@@ -15,7 +15,7 @@ import ChatModal from '@/components/kp/ChatModal';
 import {
   ClipboardList, GraduationCap, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon,
   UserCheck, UserX, Clock, Plus, Save, Calendar, Megaphone, Award, ChevronRight, Users,
-  Loader2, CloudSun, Search, Printer, MessageSquare } from
+  CheckCircle2, Loader2, CloudSun, Search, Printer, MessageSquare } from
 'lucide-react';
 
 const STATUS_OPT = [
@@ -235,64 +235,36 @@ export default function TeacherDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 space-y-4">
                 {/* My Classroom */}
-                <div className="flex items-center justify-between gap-3">
-                  <SectionBar icon={GraduationCap} label="My Classroom" />
-                  <button onClick={() => setShowSyncClass(true)} className="shrink-0 inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-[hsl(var(--kp-green))] text-white text-sm font-bold shadow-md hover:brightness-105 active:scale-95 transition-all">
-                    <span className="w-7 h-7 rounded-full bg-white/25 flex items-center justify-center"><Plus className="w-4 h-4" /></span> Add Class
-                  </button>
-                </div>
+                <SectionBar icon={GraduationCap} label="My Classroom" action={
+              <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
+              } />
             {myClasses.length === 0 ?
-              <Card><p className="text-sm text-gray-400 text-center py-6">No classes linked yet. Tap "Add Class" to link classes you teach or advise.</p></Card> :
-              <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-                <div className="overflow-x-auto kp-scroll-thin">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-[#006064] text-white text-left">
-                        <th className="px-4 py-2.5 font-semibold whitespace-nowrap">Grade</th>
-                        <th className="px-4 py-2.5 font-semibold whitespace-nowrap">Section</th>
-                        <th className="px-4 py-2.5 font-semibold whitespace-nowrap">Role</th>
-                        <th className="px-4 py-2.5 font-semibold whitespace-nowrap text-center">Students</th>
-                        <th className="px-4 py-2.5 font-semibold whitespace-nowrap">Subject</th>
-                        <th className="px-4 py-2.5 font-semibold whitespace-nowrap">Schedule</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {myClasses.map((item, idx) => {
-                        const c = item.class;
-                        const role = item.role;
-                        const count = students.length && selectedClass?.id === c.id ? students.length : c.enrolled_count || 0;
-                        const active = selectedClass?.id === c.id;
-                        const clsSched = schedules.filter((s) => s.class_name?.includes(c.grade_level) && s.class_name?.includes(c.section));
-                        const first = clsSched[0];
-                        const rowAccent = ['bg-[#004D5A]', 'bg-[#4CAF50]', 'bg-[#2196F3]', 'bg-[#B71C1C]'];
-                        const accent = rowAccent[idx % rowAccent.length];
-                        return (
-                          <tr key={c.id} onClick={() => selectClass(item)} className={`cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${active ? 'bg-[#E0F7FA]' : 'hover:bg-gray-50'}`}>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <div className="flex items-center gap-2">
-                                <span className={`w-1.5 h-7 rounded-full ${accent}`} />
-                                <span className="font-bold text-[#004D40]">Grade {c.grade_level}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 font-semibold text-[#004D40] whitespace-nowrap">{c.section}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
-                            </td>
-                            <td className="px-4 py-3 text-center font-medium text-[#546E7A] whitespace-nowrap">{count}/{c.capacity || '—'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">
-                              {role === 'subject' && item.subjectName
-                                ? <span className="font-semibold text-[#FF8F00]">{item.subjectName}</span>
-                                : first ? <span className="font-semibold text-[#00838F]">{first.subject_name}</span> : <span className="text-gray-300">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-[#546E7A] whitespace-nowrap">
-                              {first ? <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {first.start_time} - {first.end_time}</span> : <span className="text-gray-300">—</span>}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+              <Card><p className="text-sm text-gray-400 text-center py-6">No classes linked yet. Use "Sync Class" to link classes you teach or advise.</p></Card> :
+
+              <div className="flex gap-3 overflow-x-auto kp-scroll-thin pb-2">
+                {myClasses.map((item, idx) => {
+                  const c = item.class;
+                  const role = item.role;
+                  const count = students.length && selectedClass?.id === c.id ? students.length : c.enrolled_count || 0;
+                  const active = selectedClass?.id === c.id;
+                  const clsSched = schedules.filter((s) => s.class_name?.includes(c.grade_level) && s.class_name?.includes(c.section));
+                  const first = clsSched[0];
+                  const borderColors = ['border-[#004D5A]', 'border-[#4CAF50]', 'border-[#2196F3]', 'border-[#B71C1C]'];
+                  const bc = borderColors[idx % borderColors.length];
+                  return (
+                    <button key={c.id} onClick={() => selectClass(item)} className={`bg-white rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all text-2xl ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-[#004D40] bg-[#E0F7FA] px-2 py-0.5 rounded">Grade {c.grade_level}</span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
+                      </div>
+                      <div className="text-sm font-bold text-[#004D40] mt-1.5">{c.section}</div>
+                      <div className="text-xs text-[#546E7A] mt-1">{count}/{c.capacity || '—'} Students</div>
+                      {role === 'subject' && item.subjectName && <div className="text-[11px] font-semibold text-[#FF8F00] mt-1.5 truncate">{item.subjectName}</div>}
+                      {first && <div className="text-[11px] font-semibold text-[#00838F] mt-1.5 truncate">{first.subject_name}</div>}
+                      {first && <div className="text-[11px] text-[#546E7A] flex items-center gap-1"><Clock className="w-3 h-3" /> {first.start_time} - {first.end_time}</div>}
+                    </button>);
+
+                })}
               </div>
               }
               </div>

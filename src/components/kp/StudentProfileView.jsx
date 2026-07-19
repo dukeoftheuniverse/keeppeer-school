@@ -96,19 +96,19 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   const statusColor = (s) => s === 'present' ? 'text-green-600' : s === 'late' ? 'text-orange-500' : 'text-red-500';
 
   return (
-    <div className="fixed inset-0 z-[100] kp-dash-bg overflow-y-auto kp-scroll-thin">
+    <div className="fixed inset-0 z-[100] bg-[#E0F7FA] overflow-y-auto kp-scroll-thin">
       <div className="max-w-3xl mx-auto p-4 sm:p-6">
         {/* Top bar */}
         <div className="flex items-center justify-between mb-4">
-          <button onClick={onClose} className="flex items-center gap-1.5 text-sm font-medium text-[#004D40] dark:text-[#A6ECF6] hover:underline">
+          <button onClick={onClose} className="flex items-center gap-1.5 text-sm font-medium text-[#00838F] hover:underline">
             <ChevronRight className="w-4 h-4 rotate-180" /> Back to Class
           </button>
-          <button onClick={onClose} className="w-9 h-9 rounded-full kp-panel flex items-center justify-center text-[#004D40] dark:text-[#A6ECF6] hover:brightness-105">
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white shadow flex items-center justify-center text-[#00838F] hover:bg-gray-50">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="kp-panel rounded-2xl shadow-lg overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           {/* Medals + Add Badge */}
           <div className="flex items-center justify-between px-5 pt-5">
             <button className="inline-flex items-center gap-1.5 bg-[#00C853] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm hover:brightness-105">
