@@ -93,7 +93,7 @@ export default function ParentDashboard() {
     finally { setLinking(false); }
   };
 
-  if (loading) return <div className="bg-[#E0F7FA] min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#00838F] animate-spin" /></div>;
+  if (loading) return <div className="kp-dash-bg min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#00838F] animate-spin" /></div>;
 
   const present = attendance.filter(a => a.status === 'present').length;
   const absent = attendance.filter(a => a.status === 'absent').length;
@@ -107,7 +107,7 @@ export default function ParentDashboard() {
   const chatMe = { id: user?.id, name: user?.full_name || 'Parent', email: user?.email, role: 'parent' };
 
   return (
-    <div className="bg-[#E0F7FA] min-h-screen">
+    <div className="kp-dash-bg min-h-screen">
       <DashHeader greeting={greeting} name="Parents" />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
         {/* Greeting banner */}

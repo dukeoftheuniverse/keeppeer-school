@@ -8,7 +8,7 @@ function convId(a, b) { return [a, b].map(s => (s || '').toLowerCase()).sort().j
 
 const roleBadge = (r) => r === 'admin' ? 'bg-red-100 text-red-700' : r === 'teacher' ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700';
 
-export default function ChatModal({ open, onClose, me, mode }) {
+export default function ChatModal({ open, onClose, me, mode, presetContact }) {
   const [contacts, setContacts] = useState([]);
   const [allMessages, setAllMessages] = useState([]);
   const [active, setActive] = useState(null);
@@ -65,7 +65,15 @@ export default function ChatModal({ open, onClose, me, mode }) {
           list = [...teacherMap.values(), ...adminContacts];
         }
         if (!alive) return;
-        setContacts(list.filter(c => c.email && c.email.toLowerCase() !== (me.email || '').toLowerCase()));
+        const filtered = list.filter(c => c.email && c.email.toLowerCase() !== (me.email || '').toLowerCase());
+        let activeContact = null;
+        if (presetContact) {
+          const found = filtered.find(c => c.email.toLowerCase() === presetContact.email.toLowerCase());
+          if (!found) filtered.unshift(presetContact);
+          activeContact = found || presetContact;
+        }
+        setContacts(filtered);
+        if (activeContact) setActive(activeContact);
         const mine = (msgs || []).filter(m => (m.sender_email || '').toLowerCase() === (me.email || '').toLowerCase() || (m.recipient_email || '').toLowerCase() === (me.email || '').toLowerCase());
         setAllMessages(mine.sort((a, b) => (a.created_date || '').localeCompare(b.created_date || '')));
       } catch (e) { /* */ }
@@ -85,7 +93,7 @@ export default function ChatModal({ open, onClose, me, mode }) {
       }
     });
     return () => { alive = false; unsub && unsub(); };
-  }, [open, mode, me.email, me.id, me.name]);
+  }, [open, mode, me.email, me.id, me.name, presetContact?.email]);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [allMessages, active]);
 

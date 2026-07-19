@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { printHTML } from '@/lib/print';
+import ChatModal from '@/components/kp/ChatModal';
 import {
   Award, Plus, Trash2, BookOpen, ClipboardList, Calendar, X, BadgeCheck,
-  ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap, Eye, EyeOff, Printer
+  ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap, Eye, EyeOff, Printer, MessageSquare
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
@@ -17,6 +18,7 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   const [total, setTotal] = useState(100);
   const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [saving, setSaving] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -79,6 +81,8 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   const deleteGrade = async (id) => { await base44.entities.Grade.delete(id); await reload(); };
   const deleteAtt = async (id) => { await base44.entities.Attendance.delete(id); await reload(); };
 
+  const chatMe = { id: teacher?.id, name: teacher ? `${teacher.first_name} ${teacher.last_name}` : '', email: teacher?.email, role: 'teacher' };
+
   const printAttendance = () => {
     const rows = attendance.slice().reverse().map(a => {
       const bg = a.status === 'present' ? '#dcfce7' : a.status === 'late' ? '#ffedd5' : '#fee2e2';
@@ -120,8 +124,11 @@ export default function StudentProfileView({ student, school, classInfo, teacher
           </div>
 
           {/* Name plate */}
-          <div className="mt-3 bg-[#00838F] px-5 py-3">
+          <div className="mt-3 bg-[#00838F] px-5 py-3 flex items-center justify-between gap-2">
             <h2 className="text-white text-lg font-bold">{student.first_name} {student.last_name} {student.suffix || ''}</h2>
+            {student.parent_email && (
+              <button onClick={() => setShowChat(true)} className="text-xs font-medium text-white bg-white/15 hover:bg-white/25 px-3 py-1.5 rounded-full flex items-center gap-1.5 shrink-0"><MessageSquare className="w-3.5 h-3.5" /> Message Parent</button>
+            )}
           </div>
 
           {/* School info */}
@@ -271,6 +278,8 @@ export default function StudentProfileView({ student, school, classInfo, teacher
           </div>
         </div>
       </div>
+
+      <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="teacher" presetContact={student.parent_email ? { email: student.parent_email, name: student.parent_name || student.parent_email, role: 'parent', sub: `Parent of ${student.first_name} ${student.last_name}` } : null} />
     </div>
   );
 }

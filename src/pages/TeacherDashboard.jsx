@@ -222,12 +222,12 @@ export default function TeacherDashboard() {
     }).catch(() => {});
   };
 
-  if (loading) return <div className="bg-[#E0F7FA] min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#00838F] animate-spin" /></div>;
+  if (loading) return <div className="kp-dash-bg min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#00838F] animate-spin" /></div>;
 
   const teacherName = employee ? `${employee.first_name}` : (user?.full_name?.split(' ')[0] || 'Teacher');
 
   return (
-    <div className="bg-[#E0F7FA] min-h-screen">
+    <div className="kp-dash-bg min-h-screen">
       <DashHeader greeting={greeting} name={`Teacher ${teacherName}`} />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
         {employee ? (
