@@ -9,7 +9,7 @@ const navItems = [
   { label: 'School Profile', path: '/school-profile', icon: Building2 },
   { label: 'Account Settings', path: '/account-settings', icon: Settings },
   { label: 'User Accounts', path: '/user-accounts', icon: Users },
-  { label: 'Employees', path: '/employees', icon: GraduationCap },
+  { label: 'Faculty & Staff', path: '/employees', icon: GraduationCap },
   { label: 'Students', path: '/students', icon: Contact },
   { label: 'Grade & Section', path: '/classes', icon: ClipboardList },
   { label: 'ID Maker', path: '/id-maker', icon: CreditCard },

@@ -16,6 +16,7 @@ export default function Employees() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ first_name: '', middle_name: '', last_name: '', employee_id: '', position: 'Teacher', department: '', email: '', mobile_number: '', access_level: 'teacher', status: 'active', hire_date: '' });
+  const [roleFilter, setRoleFilter] = useState('all');
 
   const load = () => {
     setLoading(true);
@@ -26,7 +27,9 @@ export default function Employees() {
 
   const filtered = employees.filter(e => {
     const name = `${e.first_name} ${e.last_name}`.toLowerCase();
-    return name.includes(search.toLowerCase()) || (e.employee_id || '').toLowerCase().includes(search.toLowerCase());
+    const matchSearch = name.includes(search.toLowerCase()) || (e.employee_id || '').toLowerCase().includes(search.toLowerCase());
+    const matchRole = roleFilter === 'all' ? true : roleFilter === 'faculty' ? e.access_level === 'teacher' : e.access_level === 'staff';
+    return matchSearch && matchRole;
   });
   const totalPages = Math.ceil(filtered.length / perPage) || 1;
   const current = filtered.slice((page - 1) * perPage, page * perPage);
@@ -57,8 +60,13 @@ export default function Employees() {
 
   return (
     <div className="space-y-4">
-      <PageTitle>Employees</PageTitle>
+      <PageTitle>Faculty & Staff</PageTitle>
       <PagePanel>
+        <div className="flex gap-1.5 mb-4">
+          {[{ k: 'all', label: 'All' }, { k: 'faculty', label: 'Faculty (Teachers)' }, { k: 'staff', label: 'Staff' }].map(t => (
+            <button key={t.k} onClick={() => { setRoleFilter(t.k); setPage(1); }} className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${roleFilter === t.k ? 'bg-[hsl(var(--kp-teal))] text-white' : 'bg-[hsl(var(--accent))] text-[hsl(var(--kp-teal))] hover:brightness-95'}`}>{t.label}</button>
+          ))}
+        </div>
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <KpSelect value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="w-20">
             <option value={10}>10</option>
@@ -66,19 +74,19 @@ export default function Employees() {
             <option value={50}>50</option>
           </KpSelect>
           <SearchInput value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="flex-1" />
-          <KpButton variant="green" onClick={openAdd}><UserPlus className="w-4 h-4" /> Add Employee</KpButton>
+          <KpButton variant="green" onClick={openAdd}><UserPlus className="w-4 h-4" /> Add Faculty / Staff</KpButton>
         </div>
 
         {loading ? (
           <div className="text-center py-12 text-gray-400">Loading...</div>
         ) : current.length === 0 ? (
-          <EmptyState message="No employees found" />
+          <EmptyState message="No faculty & staff found" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 text-xs text-gray-400">
-                  <th className="text-left py-3 px-2 font-medium">Employees</th>
+                  <th className="text-left py-3 px-2 font-medium">Faculty & Staff</th>
                   <th className="text-left py-3 px-2 font-medium">ID Number</th>
                   <th className="text-left py-3 px-2 font-medium">Position</th>
                   <th className="text-left py-3 px-2 font-medium hidden sm:table-cell">Status</th>
@@ -118,7 +126,7 @@ export default function Employees() {
         {filtered.length > 0 && <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
       </PagePanel>
 
-      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={editMode ? 'Edit Employee' : 'Add Employee'}>
+      <Drawer open={drawerOpen} onClose={() => setDrawerOpen(false)} title={editMode ? 'Edit Faculty / Staff' : 'Add Faculty / Staff'}>
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="relative">
