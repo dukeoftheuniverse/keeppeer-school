@@ -7,7 +7,7 @@ import {
   UserPlus, ScanFace, Database, Clock, Monitor, AlertTriangle, Settings,
   Users, GraduationCap, Briefcase, UserCheck, Shield, CheckCircle2, XCircle,
   Loader2, Scan, Fingerprint, Activity, Bell, RefreshCw, Camera, ShieldAlert,
-  ChevronRight
+  ChevronRight, FileText
 } from 'lucide-react';
 
 export default function FacialRecognitionDashboard() {
@@ -70,6 +70,7 @@ export default function FacialRecognitionDashboard() {
     { label: 'Scanner Devices', desc: 'Manage scanners', icon: Monitor, color: 'bg-gray-500', path: '/facial-recognition/scanners' },
     { label: 'Failed Recognition Review', desc: 'Review queue', icon: AlertTriangle, color: 'bg-red-500', path: '/facial-recognition/review' },
     { label: 'Facial Recognition Settings', desc: 'Configure system', icon: Settings, color: 'bg-gray-800', path: '/facial-recognition/settings' },
+    { label: 'Reports & Analytics', desc: 'View analytics', icon: FileText, color: 'bg-indigo-500', path: '/facial-recognition/reports' },
   ];
 
   const summaryCards = [
