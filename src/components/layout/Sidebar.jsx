@@ -42,7 +42,7 @@ export default function Sidebar({ onNavigate }) {
         <div className="text-white/70 text-[10px] mt-0.5">Academic Year {school?.academic_year || '2026-2027'}</div>
       </div>
 
-      <div className="text-[10px] font-semibold uppercase tracking-wider px-2 mb-1.5 flex items-center gap-1 text-[#001029]">
+      <div className="text-[10px] font-semibold uppercase tracking-wider px-2 mb-1.5 flex items-center gap-1 text-[hsl(var(--foreground))]">
         <Building2 className="w-3 h-3" /> My School
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto kp-scroll-thin -mr-1 pr-1">
