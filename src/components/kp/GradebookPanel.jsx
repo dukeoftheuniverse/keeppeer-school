@@ -4,7 +4,7 @@ import { Loader2, Save, Award, ClipboardList, Lock } from 'lucide-react';
 
 const ACTIVITIES = ['Quiz', 'Summative Test', 'Activity', 'Project', 'Exam'];
 
-export default function GradebookPanel({ classInfo, teacher, role, onStudentClick }) {
+export default function GradebookPanel({ classInfo, teacher, role, onStudentClick, sharedStudents }) {
   const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -15,13 +15,14 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
   const load = async () => {
     if (!classInfo) { setStudents([]); setSubjects([]); setGrades([]); setLoading(false); return; }
     setLoading(true);
-    const [allStudents, subs, allGrades] = await Promise.all([
-      base44.entities.Student.list().catch(() => []),
+    const studs = sharedStudents && sharedStudents.length
+      ? sharedStudents
+      : (await base44.entities.Student.list().catch(() => [])).filter(s => s.grade === classInfo.grade_level && s.section === classInfo.section && s.enrollment_status === 'enrolled');
+    setStudents(studs);
+    const [subs, allGrades] = await Promise.all([
       base44.entities.ClassSubject.filter({ class_id: classInfo.id }).catch(() => []),
       base44.entities.Grade.filter({ class_id: classInfo.id }).catch(() => []),
     ]);
-    const studs = allStudents.filter(s => s.grade === classInfo.grade_level && s.section === classInfo.section && s.enrollment_status === 'enrolled');
-    setStudents(studs);
     const fullName = teacher ? `${teacher.first_name} ${teacher.last_name}` : '';
     const allowed = role === 'subject'
       ? subs.filter(s => s.teacher_id === teacher?.id || s.teacher_name === fullName)
@@ -33,7 +34,7 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [classInfo?.id]);
+  useEffect(() => { load(); }, [classInfo?.id, sharedStudents]);
 
   if (!classInfo) {
     return <div className="bg-white rounded-2xl shadow-md p-6 text-center text-sm text-gray-400">Select a class to open the gradebook.</div>;

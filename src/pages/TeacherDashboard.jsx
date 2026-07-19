@@ -410,7 +410,7 @@ export default function TeacherDashboard() {
                 </div>
               </div> :
 
-          <GradebookPanel classInfo={selectedClass} teacher={employee} role={selectedRole} onStudentClick={(s) => setProfileStudent(s)} />
+          <GradebookPanel classInfo={selectedClass} teacher={employee} role={selectedRole} sharedStudents={students} onStudentClick={(s) => setProfileStudent(s)} />
           }
           </> :
 

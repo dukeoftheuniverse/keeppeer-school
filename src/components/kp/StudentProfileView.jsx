@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { printHTML } from '@/lib/print';
 import ChatModal from '@/components/kp/ChatModal';
+import BadgeMedal from '@/components/kp/BadgeMedal';
+import BadgeModal from '@/components/kp/BadgeModal';
 import {
   Award, Plus, Trash2, BookOpen, ClipboardList, Calendar, X, BadgeCheck,
   ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap, Eye, EyeOff, Printer, MessageSquare
@@ -19,21 +21,32 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [saving, setSaving] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [badges, setBadges] = useState([]);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [att, gr] = await Promise.all([
+      const [att, gr, bdg] = await Promise.all([
         base44.entities.Attendance.filter({ person_id: student.id }).catch(() => []),
         base44.entities.Grade.filter({ student_id: student.id }).catch(() => []),
+        base44.entities.StudentBadge.filter({ student_id: student.id }).catch(() => []),
       ]);
       if (!alive) return;
       setAttendance(att);
       setGrades(gr);
+      setBadges(bdg);
       setLoading(false);
     })();
     return () => { alive = false; };
   }, [student.id]);
+
+  const reloadBadges = async () => {
+    const bdg = await base44.entities.StudentBadge.filter({ student_id: student.id }).catch(() => []);
+    setBadges(bdg);
+  };
+
+  const removeBadge = async (id) => { await base44.entities.StudentBadge.delete(id); await reloadBadges(); };
 
   const present = attendance.filter(a => a.status === 'present').length;
   const absent = attendance.filter(a => a.status === 'absent').length;
@@ -96,28 +109,33 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   const statusColor = (s) => s === 'present' ? 'text-green-600' : s === 'late' ? 'text-orange-500' : 'text-red-500';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#E0F7FA] overflow-y-auto kp-scroll-thin">
+    <div className="fixed inset-0 z-[100] kp-dash-bg overflow-y-auto kp-scroll-thin">
       <div className="max-w-3xl mx-auto p-4 sm:p-6">
         {/* Top bar */}
         <div className="flex items-center justify-between mb-4">
           <button onClick={onClose} className="flex items-center gap-1.5 text-sm font-medium text-[#00838F] hover:underline">
             <ChevronRight className="w-4 h-4 rotate-180" /> Back to Class
           </button>
-          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white shadow flex items-center justify-center text-[#00838F] hover:bg-gray-50">
+          <button onClick={onClose} className="w-9 h-9 rounded-full kp-panel flex items-center justify-center text-[#00838F] hover:brightness-105">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="kp-panel rounded-2xl shadow-lg overflow-hidden">
           {/* Medals + Add Badge */}
           <div className="flex items-center justify-between px-5 pt-5">
-            <button className="inline-flex items-center gap-1.5 bg-[#00C853] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm hover:brightness-105">
+            <button onClick={() => setShowBadgeModal(true)} className="inline-flex items-center gap-1.5 bg-[#00C853] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm hover:brightness-105">
               <Plus className="w-3.5 h-3.5" /> Add Badge
             </button>
-            <div className="flex gap-1.5">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className={`w-9 h-9 rounded-full flex items-center justify-center ${i <= Math.ceil(rate / 20) ? 'bg-yellow-100 text-yellow-500 ring-1 ring-yellow-300' : 'bg-gray-100 text-gray-300'}`}>
-                  <Award className="w-5 h-5" />
+            <div className="flex gap-1.5 items-center">
+              {badges.length === 0 ? (
+                <span className="text-xs text-gray-400">No badges awarded yet.</span>
+              ) : badges.map(b => (
+                <div key={b.id} className="relative group">
+                  <BadgeMedal type={b.badge_type} size={44} />
+                  <button onClick={() => removeBadge(b.id)} className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center" title="Remove badge">
+                    <Trash2 className="w-2.5 h-2.5" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -280,6 +298,8 @@ export default function StudentProfileView({ student, school, classInfo, teacher
       </div>
 
       <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="teacher" student={student} presetContact={student.parent_email ? { email: student.parent_email, name: student.parent_name || student.parent_email, role: 'parent', sub: `Parent of ${student.first_name} ${student.last_name}` } : null} />
+
+      <BadgeModal open={showBadgeModal} onClose={() => setShowBadgeModal(false)} student={student} teacher={teacher} onAwarded={reloadBadges} />
     </div>
   );
 }
