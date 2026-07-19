@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Loader2, Save, Award, ClipboardList, Lock } from 'lucide-react';
 
-const ACTIVITIES = ['Quiz', 'Summative Test', 'Activity', 'Project', 'Exam'];
+const DEFAULT_ACTIVITIES = ['Quiz', 'Summative Test', 'Activity', 'Project', 'Exam', 'Assignment'];
+function loadActivities() {
+  try { return [...new Set([...DEFAULT_ACTIVITIES, ...JSON.parse(localStorage.getItem('kp_custom_activities') || '[]')])]; } catch { return DEFAULT_ACTIVITIES; }
+}
+function saveActivity(a) {
+  if (!a) return;
+  const custom = JSON.parse(localStorage.getItem('kp_custom_activities') || '[]');
+  if (!DEFAULT_ACTIVITIES.includes(a) && !custom.includes(a)) { custom.push(a); localStorage.setItem('kp_custom_activities', JSON.stringify(custom)); }
+}
 
 export default function GradebookPanel({ classInfo, teacher, role, onStudentClick }) {
   const [students, setStudents] = useState([]);
@@ -11,6 +19,7 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ student_id: '', subject: '', activity: 'Quiz', score: '', total: 100, date: new Date().toLocaleDateString('en-CA') });
+  const [activities, setActivities] = useState(loadActivities);
 
   const load = async () => {
     if (!classInfo) { setStudents([]); setSubjects([]); setGrades([]); setLoading(false); return; }
@@ -55,6 +64,8 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
   const save = async () => {
     if (!form.student_id || !form.subject || !form.activity) return;
     setSaving(true);
+    saveActivity(form.activity);
+    setActivities(loadActivities());
     const stu = students.find(s => s.id === form.student_id);
     await base44.entities.Grade.create({
       student_id: form.student_id,
@@ -109,8 +120,7 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
             </select>
             <input list="kp-activities-gb" value={form.activity} onChange={e => setForm({ ...form, activity: e.target.value })} placeholder="Activity" className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm bg-white" />
             <datalist id="kp-activities-gb">
-              {ACTIVITIES.map(a => <option key={a} value={a}>{a}</option>)}
-              <option>Assignment</option>
+              {activities.map(a => <option key={a} value={a}>{a}</option>)}
             </datalist>
             <input type="number" value={form.score} onChange={e => setForm({ ...form, score: e.target.value })} placeholder="Score" className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm" />
             <input type="number" value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} placeholder="Total" className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm" />
@@ -124,7 +134,11 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
 
       {/* Matrix */}
       {loading ? <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[hsl(var(--kp-teal))] animate-spin" /></div> :
-        students.length === 0 ? <p className="text-sm text-gray-400 text-center py-8">No enrolled students in this classroom.</p> : (
+        students.length === 0 ? <p className="text-sm text-gray-400 text-center py-8">No enrolled students in this classroom.</p> :
+        (() => {
+          const graded = students.filter(s => grades.some(g => g.student_id === s.id));
+          if (graded.length === 0) return <p className="text-sm text-gray-400 text-center py-8">No grades recorded yet. Student names appear here once scores are entered.</p>;
+          return (
           <div className="overflow-auto kp-scroll-thin">
             <table className="w-full text-sm border-collapse min-w-[600px]">
               <thead>
@@ -135,7 +149,7 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
                 </tr>
               </thead>
               <tbody>
-                {students.map(s => (
+                {graded.map(s => (
                   <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="py-2 px-2 sticky left-0 bg-white">
                       <button onClick={() => onStudentClick?.(s)} className="text-sm font-medium text-[hsl(var(--kp-teal))] truncate hover:underline text-left" title="View grade history">{s.first_name} {s.last_name}</button>
@@ -150,7 +164,8 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
               </tbody>
             </table>
           </div>
-        )}
+          );
+        })()}
       <div className="text-[11px] text-gray-400 mt-2">Cell values show the average of recorded scores per subject. Detailed per-student scores live in the Score Board (click a student name).</div>
     </div>
   );

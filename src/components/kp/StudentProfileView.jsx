@@ -2,34 +2,52 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { printHTML } from '@/lib/print';
 import ChatModal from '@/components/kp/ChatModal';
+import BadgeModal from '@/components/kp/BadgeModal';
+import BadgeMedal, { BADGE_TYPES } from '@/components/kp/BadgeMedal';
 import {
   Award, Plus, Trash2, BookOpen, ClipboardList, Calendar, X, BadgeCheck,
-  ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap, Eye, EyeOff, Printer, MessageSquare
+  ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap, Eye, EyeOff, Printer, MessageSquare, History
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+
+const DEFAULT_ACTIVITIES = ['Quiz', 'Summative Test', 'Activity', 'Project', 'Exam', 'Assignment'];
+function loadActivities() {
+  try { return [...new Set([...DEFAULT_ACTIVITIES, ...JSON.parse(localStorage.getItem('kp_custom_activities') || '[]')])]; } catch { return DEFAULT_ACTIVITIES; }
+}
+function saveActivity(a) {
+  if (!a) return;
+  const custom = JSON.parse(localStorage.getItem('kp_custom_activities') || '[]');
+  if (!DEFAULT_ACTIVITIES.includes(a) && !custom.includes(a)) { custom.push(a); localStorage.setItem('kp_custom_activities', JSON.stringify(custom)); }
+}
 
 export default function StudentProfileView({ student, school, classInfo, teacher, subjectName, onClose }) {
   const [tab, setTab] = useState('score');
   const [attendance, setAttendance] = useState([]);
   const [grades, setGrades] = useState([]);
+  const [badges, setBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState('');
+  const [activities, setActivities] = useState(loadActivities);
   const [score, setScore] = useState('');
   const [total, setTotal] = useState(100);
   const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [saving, setSaving] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showBadge, setShowBadge] = useState(false);
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [att, gr] = await Promise.all([
+      const [att, gr, bd] = await Promise.all([
         base44.entities.Attendance.filter({ person_id: student.id }).catch(() => []),
         base44.entities.Grade.filter({ student_id: student.id }).catch(() => []),
+        base44.entities.StudentBadge.filter({ student_id: student.id }).catch(() => []),
       ]);
       if (!alive) return;
+      bd.sort((a, b) => (b.created_date || '').localeCompare(a.created_date || ''));
       setAttendance(att);
       setGrades(gr);
+      setBadges(bd);
       setLoading(false);
     })();
     return () => { alive = false; };
@@ -42,16 +60,20 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   const rate = tot ? Math.round((present / tot) * 100) : 0;
 
   const reload = async () => {
-    const [att, gr] = await Promise.all([
+    const [att, gr, bd] = await Promise.all([
       base44.entities.Attendance.filter({ person_id: student.id }).catch(() => []),
       base44.entities.Grade.filter({ student_id: student.id }).catch(() => []),
+      base44.entities.StudentBadge.filter({ student_id: student.id }).catch(() => []),
     ]);
-    setAttendance(att); setGrades(gr);
+    bd.sort((a, b) => (b.created_date || '').localeCompare(a.created_date || ''));
+    setAttendance(att); setGrades(gr); setBadges(bd);
   };
 
   const saveScore = async () => {
     if (!activity.trim()) return;
     setSaving(true);
+    saveActivity(activity.trim());
+    setActivities(loadActivities());
     await base44.entities.Grade.create({
       student_id: student.id,
       student_name: `${student.first_name} ${student.last_name}`,
@@ -96,27 +118,29 @@ export default function StudentProfileView({ student, school, classInfo, teacher
   const statusColor = (s) => s === 'present' ? 'text-green-600' : s === 'late' ? 'text-orange-500' : 'text-red-500';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#E0F7FA] overflow-y-auto kp-scroll-thin">
+    <div className="fixed inset-0 z-[100] kp-dash-bg overflow-y-auto kp-scroll-thin">
       <div className="max-w-3xl mx-auto p-4 sm:p-6">
         {/* Top bar */}
         <div className="flex items-center justify-between mb-4">
           <button onClick={onClose} className="flex items-center gap-1.5 text-sm font-medium text-[#00838F] hover:underline">
             <ChevronRight className="w-4 h-4 rotate-180" /> Back to Class
           </button>
-          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white shadow flex items-center justify-center text-[#00838F] hover:bg-gray-50">
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/70 backdrop-blur shadow flex items-center justify-center text-[#00838F] hover:bg-white">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div className="kp-glass-card rounded-2xl shadow-lg overflow-hidden">
           {/* Medals + Add Badge */}
-          <div className="flex items-center justify-between px-5 pt-5">
-            <button className="inline-flex items-center gap-1.5 bg-[#00C853] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm hover:brightness-105">
+          <div className="flex items-center justify-between px-5 pt-5 gap-3 flex-wrap">
+            <button onClick={() => setShowBadge(true)} className="inline-flex items-center gap-1.5 bg-[#00C853] text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm hover:brightness-105">
               <Plus className="w-3.5 h-3.5" /> Add Badge
             </button>
-            <div className="flex gap-1.5">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className={`w-9 h-9 rounded-full flex items-center justify-center ${i <= Math.ceil(rate / 20) ? 'bg-yellow-100 text-yellow-500 ring-1 ring-yellow-300' : 'bg-gray-100 text-gray-300'}`}>
+            <div className="flex gap-1.5 flex-wrap">
+              {badges.length > 0 ? badges.slice(0, 5).map(b => (
+                <div key={b.id} className="w-12 h-12" title={BADGE_TYPES[b.badge_type]?.label}><BadgeMedal type={b.badge_type} size={48} showLabel={false} /></div>
+              )) : [1, 2, 3, 4, 5].map(i => (
+                <div key={i} className={`w-9 h-9 rounded-full flex items-center justify-center ${i <= Math.ceil(rate / 20) ? 'bg-yellow-100 text-yellow-500 ring-1 ring-yellow-300' : 'bg-gray-100/70 text-gray-300'}`}>
                   <Award className="w-5 h-5" />
                 </div>
               ))}
@@ -132,7 +156,7 @@ export default function StudentProfileView({ student, school, classInfo, teacher
           </div>
 
           {/* School info */}
-          <div className="mx-5 my-4 bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-3">
+          <div className="mx-5 my-4 kp-panel-translucent rounded-xl border border-white/40 p-3 flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#1565C0] to-[#FFC107] flex items-center justify-center text-white font-bold text-sm shrink-0">
               {school?.logo_url ? <img src={school.logo_url} alt="logo" className="w-full h-full rounded-full object-cover" /> : 'LES'}
             </div>
@@ -204,15 +228,11 @@ export default function StudentProfileView({ student, school, classInfo, teacher
                 <div className="bg-[#E8F9FB] rounded-2xl p-4 space-y-3">
                   <div>
                     <label className="text-sm font-medium text-[#0F766E] block mb-1">Activity</label>
-                    <input list="kp-activities" value={activity} onChange={e => setActivity(e.target.value)} placeholder="Select or type activity..." className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20" />
+                    <input list="kp-activities" value={activity} onChange={e => setActivity(e.target.value)} placeholder="Select or type activity..." className="w-full px-3 py-2.5 rounded-lg bg-white/80 border border-gray-200 text-[#1F2937] text-sm focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20" />
                     <datalist id="kp-activities">
-                      <option>Quiz</option>
-                      <option>Summative Test</option>
-                      <option>Activity</option>
-                      <option>Project</option>
-                      <option>Exam</option>
-                      <option>Assignment</option>
+                      {activities.map(a => <option key={a} value={a}>{a}</option>)}
                     </datalist>
+                    <p className="text-[10px] text-[#546E7A] mt-1">Type a custom activity to add it to the list for future use.</p>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
@@ -233,23 +253,43 @@ export default function StudentProfileView({ student, school, classInfo, teacher
                   </button>
                 </div>
 
-                <div className="mt-4 space-y-2.5">
-                  {grades.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No scores recorded yet.</p> :
-                    grades.map(g => (
-                      <div key={g.id} className="bg-[#CBEAF4] rounded-xl px-4 py-3 flex items-center justify-between">
-                        <div className="min-w-0">
-                          <div className="text-sm font-bold text-[#1E3A8A] truncate">{g.activity_type || g.subject_name}</div>
-                          <div className="text-xs text-[#374151]">{g.date ? new Date(g.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}</div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-sm font-bold text-[#1F2937]">{g.score}/{g.total}</span>
-                          <button onClick={() => toggleVisible(g)} title={g.visible_to_parent === false ? 'Hidden from parents' : 'Visible to parents'} className={`hover:text-[#0F766E] ${g.visible_to_parent === false ? 'text-gray-300' : 'text-[#0F766E]'}`}>
-                            {g.visible_to_parent === false ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
-                          <button onClick={() => deleteGrade(g.id)} className="text-[#6B7280] hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                        </div>
+                <div className="mt-4">
+                  {grades.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No scores recorded yet.</p> : (
+                    <>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <History className="w-3.5 h-3.5 text-[#00838F]" />
+                        <span className="text-xs font-bold text-[#004D40] uppercase tracking-wide">Score History ({grades.length})</span>
                       </div>
-                    ))}
+                      <div className="relative pl-5">
+                        <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
+                        {grades.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(g => {
+                          const pct = g.total ? Math.round((g.score / g.total) * 100) : 0;
+                          const dotColor = pct >= 90 ? 'bg-green-500' : pct >= 75 ? 'bg-blue-500' : 'bg-orange-500';
+                          return (
+                            <div key={g.id} className="relative mb-2.5 last:mb-0">
+                              <div className={`absolute -left-[14px] top-2 w-3 h-3 rounded-full ${dotColor} border-2 border-white shadow`} />
+                              <div className="bg-[#CBEAF4]/70 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                                <div className="min-w-0">
+                                  <div className="text-sm font-bold text-[#1E3A8A] truncate">{g.activity_type || g.subject_name}</div>
+                                  <div className="text-xs text-[#374151]">{g.date ? new Date(g.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''} • {g.subject_name !== g.activity_type ? g.subject_name : ''}</div>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <div className="text-right">
+                                    <div className="text-sm font-bold text-[#1F2937]">{g.score}/{g.total}</div>
+                                    <div className={`text-[10px] font-semibold ${pct >= 90 ? 'text-green-600' : pct >= 75 ? 'text-blue-600' : 'text-orange-600'}`}>{pct}%</div>
+                                  </div>
+                                  <button onClick={() => toggleVisible(g)} title={g.visible_to_parent === false ? 'Hidden from parents' : 'Visible to parents'} className={`hover:text-[#0F766E] ${g.visible_to_parent === false ? 'text-gray-300' : 'text-[#0F766E]'}`}>
+                                    {g.visible_to_parent === false ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  </button>
+                                  <button onClick={() => deleteGrade(g.id)} className="text-[#6B7280] hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
@@ -280,6 +320,7 @@ export default function StudentProfileView({ student, school, classInfo, teacher
       </div>
 
       <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="teacher" student={student} presetContact={student.parent_email ? { email: student.parent_email, name: student.parent_name || student.parent_email, role: 'parent', sub: `Parent of ${student.first_name} ${student.last_name}` } : null} />
+      <BadgeModal open={showBadge} onClose={() => setShowBadge(false)} student={student} teacher={teacher} onAwarded={reload} />
     </div>
   );
 }

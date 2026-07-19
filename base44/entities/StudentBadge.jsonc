@@ -1,0 +1,39 @@
+{
+  "name": "StudentBadge",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "badge_type": {
+      "type": "string",
+      "enum": [
+        "student_achievement",
+        "perfect_attendance",
+        "excellence",
+        "leadership",
+        "honor_roll"
+      ]
+    },
+    "awarded_by_id": {
+      "type": "string"
+    },
+    "awarded_by_name": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_id",
+    "badge_type"
+  ]
+}
