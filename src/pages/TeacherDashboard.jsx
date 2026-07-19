@@ -298,7 +298,7 @@ export default function TeacherDashboard() {
                 const borderColors = ['border-[#004D5A]', 'border-[#4CAF50]', 'border-[#2196F3]', 'border-[#B71C1C]'];
                 const bc = borderColors[idx % borderColors.length];
                 return (
-                  <button key={c.id} onClick={() => selectClass(item)} className={`bg-white rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all text-2xl ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
+                  <button key={c.id} onClick={() => selectClass(item)} className={`rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all text-2xl bg-gray-50 ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#004D40] bg-[#E0F7FA] px-2 py-0.5 rounded">Grade {c.grade_level}</span>
                       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
