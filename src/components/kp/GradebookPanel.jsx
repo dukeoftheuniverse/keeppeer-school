@@ -45,21 +45,8 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
   useEffect(() => {load();}, [classInfo?.id]);
 
   if (!classInfo) {
-    return <div className="bg-white rounded-2xl shadow-md p-6 text-center text-sm text-gray-400">Select a class to open the gradebook.</div>;
+    return <div className="bg-white rounded-2xl shadow-md p-6 text-center text-sm text-gray-400">Select a class to open the score records.</div>;
   }
-
-  const avgFor = (studentId, subject) => {
-    const recs = grades.filter((g) => g.student_id === studentId && g.subject_name === subject);
-    if (!recs.length) return null;
-    const pcts = recs.map((g) => g.total ? g.score / g.total * 100 : 0);
-    return Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length);
-  };
-
-  const rowAvg = (studentId) => {
-    const vals = subjects.map((s) => avgFor(studentId, s)).filter((v) => v != null);
-    if (!vals.length) return null;
-    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-  };
 
   const save = async () => {
     if (!form.student_id || !form.subject || !form.activity) return;
@@ -146,52 +133,19 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
         }
       </div>
 
-      {/* Matrix */}
-      {loading ? <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 text-[hsl(var(--kp-teal))] animate-spin" /></div> :
-      students.length === 0 ? <p className="text-sm text-gray-400 text-center py-8">No enrolled students in this classroom.</p> :
-      (() => {
-        const graded = students.filter((s) => grades.some((g) => g.student_id === s.id));
-        if (graded.length === 0) return <p className="text-sm text-gray-400 text-center py-8">No grades recorded yet. Student names appear here once scores are entered.</p>;
-        return (
-          <div className="overflow-auto kp-scroll-thin">
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
-          </div>);
-
-      })()}
       {/* Score Records — list with delete + striped rows */}
-      <div className="mt-5">
-       <div className="flex items-center justify-between mb-2">
-         
-         
+      <div className="mt-1">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-bold text-[hsl(var(--kp-teal))] flex items-center gap-1.5"><ListChecks className="w-4 h-4" /> Recorded Scores</h4>
+          {grades.length > 0 && role === 'advisory' &&
+          <button onClick={clearAll} className="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg flex items-center gap-1"><Trash2 className="w-3.5 h-3.5" /> Clear all</button>
+          }
+        </div>
+        {loading ? <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 text-[hsl(var(--kp-teal))] animate-spin" /></div> :
+        grades.length === 0 ?
+        <p className="text-sm text-gray-400 text-center py-6">No score records yet. Student names appear once scores are entered.</p> :
 
-          
-       </div>
-       {grades.length === 0 ?
-        <p className="text-sm text-gray-400 text-center py-6">No score records yet.</p> :
-
-        <div className="overflow-auto kp-scroll-thin max-h-[340px] rounded-xl border border-[#B2EBF2]/60">
+        <div className="overflow-auto kp-scroll-thin max-h-[420px] rounded-xl border border-[#B2EBF2]/60">
            <table className="w-full text-sm">
              <thead className="sticky top-0 z-10">
                <tr className="bg-[#00838F] text-white">
@@ -205,7 +159,7 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
                </tr>
              </thead>
              <tbody>
-               {grades.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((g, i) => {
+               {grades.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.created_date || '').localeCompare(a.created_date || '')).map((g, i) => {
                 const pct = g.total ? Math.round(g.score / g.total * 100) : 0;
                 return (
                   <tr key={g.id} className={`border-b border-[#B2EBF2]/30 ${i % 2 === 0 ? 'bg-[#E0F7FA]/60' : 'bg-white/70'}`}>
@@ -226,7 +180,7 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
          </div>
         }
       </div>
-      <div className="text-[11px] text-gray-400 mt-2">Cell values show the average of recorded scores per subject. Detailed per-student scores live in the Score Board (click a student name).</div>
+      <div className="text-[11px] text-gray-400 mt-2">Detailed per-student scores live in the Score Board (click a student name from the Attendance list).</div>
     </div>);
 
 }
