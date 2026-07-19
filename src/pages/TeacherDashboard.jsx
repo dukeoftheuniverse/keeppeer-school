@@ -7,6 +7,7 @@ import AnnouncementList from '@/components/kp/AnnouncementList';
 import AnnouncementModal from '@/components/kp/AnnouncementModal';
 import StudentProfileView from '@/components/kp/StudentProfileView';
 import AddStudentModal from '@/components/kp/AddStudentModal';
+import SyncClassModal from '@/components/kp/SyncClassModal';
 import { logAudit } from '@/lib/audit';
 import {
   ClipboardList, GraduationCap, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon,
@@ -47,6 +48,7 @@ export default function TeacherDashboard() {
   const [showAnnModal, setShowAnnModal] = useState(false);
   const [profileStudent, setProfileStudent] = useState(null);
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showSyncClass, setShowSyncClass] = useState(false);
   const [tab, setTab] = useState('attendance'); // attendance | grades
 
   // grades state
@@ -192,7 +194,7 @@ export default function TeacherDashboard() {
           <>
             {/* My Classroom */}
             <SectionBar icon={GraduationCap} label="My Classroom" action={
-              <span className="text-[11px] font-medium text-white/85 bg-white/15 px-2.5 py-1 rounded-lg flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Synced from Admin</span>
+              <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
             } />
             {myClasses.length === 0 ? (
               <Card><p className="text-sm text-gray-400 text-center py-6">No advisory classes assigned yet. Contact the administrator.</p></Card>
@@ -420,6 +422,7 @@ export default function TeacherDashboard() {
       )}
 
       <AddStudentModal open={showAddStudent} onClose={() => setShowAddStudent(false)} onAdded={() => selectedClass && selectClass(selectedClass)} classInfo={selectedClass} />
+      <SyncClassModal open={showSyncClass} onClose={() => setShowSyncClass(false)} onLinked={() => load()} teacher={employee} />
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} defaultAudience="class" defaultClass={selectedClass ? `${selectedClass.grade_level} - ${selectedClass.section}` : ''} user={user} />
     </div>
