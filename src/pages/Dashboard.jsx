@@ -7,6 +7,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import WeatherMonitor from '@/components/kp/WeatherMonitor';
 import AnnouncementList from '@/components/kp/AnnouncementList';
 import AnnouncementModal from '@/components/kp/AnnouncementModal';
+import ThemeToggle from '@/components/kp/ThemeToggle';
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
   return (
@@ -102,12 +103,15 @@ export default function Dashboard() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <PageTitle subtitle={dateStr}>Dashboard</PageTitle>
-        <div className="kp-panel rounded-xl px-4 py-2.5 shadow-sm flex items-center gap-3">
-          <Clock className="w-5 h-5 text-[hsl(var(--kp-teal))]" />
-          <div>
-            <div className="text-lg font-bold text-[hsl(var(--kp-teal))] tabular-nums leading-none">{timeStr}</div>
-            <div className="text-[10px] text-gray-400 mt-0.5">Philippine Standard Time</div>
+        <div className="flex items-center gap-2.5">
+          <div className="kp-panel rounded-xl px-4 py-2.5 shadow-sm flex items-center gap-3">
+            <Clock className="w-5 h-5 text-[hsl(var(--kp-teal))]" />
+            <div>
+              <div className="text-lg font-bold text-[hsl(var(--kp-teal))] tabular-nums leading-none">{timeStr}</div>
+              <div className="text-[10px] text-gray-400 mt-0.5">Philippine Standard Time</div>
+            </div>
           </div>
+          <ThemeToggle />
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Clock, Settings, LogOut, RefreshCw } from 'lucide-react';
 import { clearRoleChoice } from '@/pages/DashboardRouter';
+import ThemeToggle from '@/components/kp/ThemeToggle';
 
 export default function DashHeader({ greeting, name }) {
   const { user } = useAuth();
@@ -45,6 +46,7 @@ export default function DashHeader({ greeting, name }) {
               <Clock className="w-3 h-3" /> {timeStr}, {dateStr}
             </div>
           </div>
+          <ThemeToggle />
           <div className="relative">
             <button onClick={() => setMenuOpen(!menuOpen)} className="w-9 h-9 rounded-full bg-white/70 hover:bg-white flex items-center justify-center text-[#004D40] transition-colors">
               <Settings className="w-5 h-5" />

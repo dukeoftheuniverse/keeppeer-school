@@ -6,13 +6,13 @@ export default function RoleSelect({ onSelect }) {
   const roles = [
     { id: 'admin', title: 'Admin Dashboard', desc: 'Full school management — students, staff, attendance, IDs & reports.', icon: Shield, color: 'from-[#004D5A] to-[#2BB5C6]' },
     { id: 'teacher', title: 'Teacher Account', desc: 'Manage your classes, take attendance & post announcements.', icon: GraduationCap, color: 'from-[#00796B] to-[#26A69A]' },
-    { id: 'parent', title: 'Parent Account', desc: 'Track your child’s attendance, schedule & school notices.', icon: Users, color: 'from-[#0277BD] to-[#4FC3F7]' },
+    { id: 'parent', title: 'Parent Account', desc: "Track your child's attendance, schedule & school notices.", icon: Users, color: 'from-[#0277BD] to-[#4FC3F7]' },
   ];
 
   return (
-    <div className="kp-site-bg min-h-screen flex items-center justify-center py-8">
-      <div className="w-full max-w-4xl px-4">
-        <div className="text-center mb-8">
+    <div className="kp-dash-bg min-h-screen flex items-center justify-center py-10">
+      <div className="w-full max-w-5xl px-4">
+        <div className="text-center mb-9">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[hsl(var(--kp-teal))] text-white mb-4 shadow-lg">
             <School className="w-8 h-8" />
           </div>
@@ -20,13 +20,13 @@ export default function RoleSelect({ onSelect }) {
           <p className="text-sm text-gray-500 mt-1.5 max-w-md mx-auto">Select your account type to continue to your dashboard.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {roles.map(r => {
             const Icon = r.icon;
             return (
               <button key={r.id} onClick={() => onSelect(r.id, remember)}
-                className="kp-panel rounded-2xl p-6 text-left group hover:scale-[1.02] hover:shadow-xl transition-all duration-200 flex flex-col">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${r.color} flex items-center justify-center mb-4 shadow-md`}>
+                className="kp-glass-card rounded-2xl p-6 text-left group hover:scale-[1.02] hover:shadow-xl transition-all duration-200 flex flex-col min-h-[230px]">
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${r.color} flex items-center justify-center mb-4 shadow-md shrink-0`}>
                   <Icon className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-base font-bold text-[hsl(var(--kp-teal))] mb-1.5">{r.title}</h3>
@@ -38,7 +38,7 @@ export default function RoleSelect({ onSelect }) {
             );
           })}
         </div>
-        <label className="flex items-center justify-center gap-2 mt-6 text-sm text-gray-600 cursor-pointer select-none">
+        <label className="flex items-center justify-center gap-2 mt-7 text-sm text-gray-600 cursor-pointer select-none">
           <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-[hsl(var(--kp-teal))] focus:ring-[hsl(var(--kp-teal))]" />
           Remember my choice on this device (skip this screen next time)
         </label>
