@@ -5,6 +5,7 @@ import DashHeader from '@/components/kp/DashHeader';
 import WeatherMonitor from '@/components/kp/WeatherMonitor';
 import AnnouncementList from '@/components/kp/AnnouncementList';
 import AnnouncementModal from '@/components/kp/AnnouncementModal';
+import StudentProfileView from '@/components/kp/StudentProfileView';
 import { logAudit } from '@/lib/audit';
 import {
   ClipboardList, GraduationCap, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon,
@@ -43,6 +44,7 @@ export default function TeacherDashboard() {
   const [schedules, setSchedules] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [showAnnModal, setShowAnnModal] = useState(false);
+  const [profileStudent, setProfileStudent] = useState(null);
   const [tab, setTab] = useState('attendance'); // attendance | grades
 
   // grades state
@@ -176,12 +178,12 @@ export default function TeacherDashboard() {
     }).catch(() => {});
   };
 
-  if (loading) return <div className="kp-site-bg min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-white animate-spin" /></div>;
+  if (loading) return <div className="bg-[#E0F7FA] min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 text-[#00838F] animate-spin" /></div>;
 
   const teacherName = employee ? `${employee.first_name}` : (user?.full_name?.split(' ')[0] || 'Teacher');
 
   return (
-    <div className="kp-site-bg min-h-screen">
+    <div className="bg-[#E0F7FA] min-h-screen">
       <DashHeader greeting={greeting} name={`Teacher ${teacherName}`} />
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
         {employee ? (
@@ -194,18 +196,23 @@ export default function TeacherDashboard() {
               <Card><p className="text-sm text-gray-400 text-center py-6">No advisory classes assigned yet. Contact the administrator.</p></Card>
             ) : (
               <div className="flex gap-3 overflow-x-auto kp-scroll-thin pb-2">
-                {myClasses.map(c => {
+                {myClasses.map((c, idx) => {
                   const count = students.length && selectedClass?.id === c.id ? students.length : c.enrolled_count || 0;
                   const active = selectedClass?.id === c.id;
+                  const clsSched = schedules.filter(s => s.class_name?.includes(c.grade_level) && s.class_name?.includes(c.section));
+                  const first = clsSched[0];
+                  const borderColors = ['border-[#004D5A]', 'border-[#4CAF50]', 'border-[#2196F3]', 'border-[#B71C1C]'];
+                  const bc = borderColors[idx % borderColors.length];
                   return (
-                    <button key={c.id} onClick={() => selectClass(c)} className={`bg-white rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : 'border-transparent hover:border-[#B2EBF2]'}`}>
+                    <button key={c.id} onClick={() => selectClass(c)} className={`bg-white rounded-2xl shadow p-4 min-w-[190px] text-left border-2 transition-all ${active ? 'border-[#004D5A] ring-2 ring-[#004D5A]/20' : `${bc} hover:opacity-90`}`}>
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[#004D40] bg-[#E0F7FA] px-2 py-0.5 rounded">Grade {c.grade_level}</span>
                         <span className={`w-2 h-2 rounded-full ${c.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`} />
                       </div>
                       <div className="text-sm font-bold text-[#004D40] mt-1.5">{c.section}</div>
                       <div className="text-xs text-[#546E7A] mt-1">{count}/{c.capacity || '—'} Students</div>
-                      <div className="text-[11px] text-[#00838F] mt-1.5 flex items-center gap-1"><Clock className="w-3 h-3" /> {c.session || 'Whole Day'}</div>
+                      {first && <div className="text-[11px] font-semibold text-[#00838F] mt-1.5 truncate">{first.subject_name}</div>}
+                      {first && <div className="text-[11px] text-[#546E7A] flex items-center gap-1"><Clock className="w-3 h-3" /> {first.start_time} - {first.end_time}</div>}
                     </button>
                   );
                 })}
@@ -243,7 +250,9 @@ export default function TeacherDashboard() {
                         return (
                           <div key={s.id} className="rounded-xl border border-gray-100 overflow-hidden">
                             <button onClick={() => setExpanded(isExpanded ? null : s.id)} className="w-full flex items-center gap-3 p-2.5 hover:bg-gray-50 text-left">
-                              <Avatar name={`${s.first_name} ${s.last_name}`} src={s.photo_url} />
+                              <div onClick={(e) => { e.stopPropagation(); setProfileStudent(s); }} className="cursor-pointer rounded-full ring-2 ring-transparent hover:ring-[#00BCD4] transition" title="View profile">
+                                <Avatar name={`${s.first_name} ${s.last_name}`} src={s.photo_url} />
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-semibold text-[#004D40] truncate">{s.first_name} {s.last_name} {s.suffix || ''}</div>
                                 <div className="text-[11px] text-[#546E7A] font-mono">{s.lrn || s.student_id || '—'}</div>
@@ -396,6 +405,17 @@ export default function TeacherDashboard() {
           </Card>
         )}
       </main>
+
+      {profileStudent && (
+        <StudentProfileView
+          student={profileStudent}
+          school={school}
+          classInfo={selectedClass}
+          teacher={employee}
+          subjectName={subjects[0] || gradeSubject || ''}
+          onClose={() => setProfileStudent(null)}
+        />
+      )}
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} defaultAudience="class" defaultClass={selectedClass ? `${selectedClass.grade_level} - ${selectedClass.section}` : ''} user={user} />
     </div>
