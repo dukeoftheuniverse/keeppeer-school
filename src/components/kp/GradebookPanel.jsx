@@ -183,10 +183,10 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
       {/* Score Records — list with delete + striped rows */}
       <div className="mt-5">
        <div className="flex items-center justify-between mb-2">
-         <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] flex items-center gap-2 hidden"><ListChecks className="w-4 h-4" /> Score Records</h3>
-         {grades.length > 0 &&
-          <button onClick={clearAll} className="text-xs font-medium text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-lg flex items-center gap-1 hidden"><Trash2 className="w-3.5 h-3.5" /> Remove All Records</button>
-          }
+         
+         
+
+          
        </div>
        {grades.length === 0 ?
         <p className="text-sm text-gray-400 text-center py-6">No score records yet.</p> :
