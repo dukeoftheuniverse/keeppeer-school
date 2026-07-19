@@ -109,7 +109,7 @@ export default function GradebookPanel({ classInfo, teacher, role, onStudentClic
       <div className="flex items-center gap-2 mb-4">
         <ClipboardList className="w-6 h-6 text-[#16A34A]" />
         <div>
-          <h3 className="text-lg font-bold text-[hsl(var(--kp-teal))]">Gradebook — {classInfo.grade_level} - {classInfo.section}</h3>
+          <h3 className="text-lg font-bold text-[hsl(var(--kp-teal))]">Score Records — {classInfo.grade_level} - {classInfo.section}</h3>
           <div className="flex items-center gap-1.5 text-xs">
             <span className={`px-2 py-0.5 rounded font-semibold ${role === 'advisory' ? 'bg-[#00838F] text-white' : 'bg-[#FFB300] text-white'}`}>{role === 'advisory' ? 'ADVISORY' : 'SUBJECT'}</span>
             {role === 'subject' && <span className="text-gray-500 flex items-center gap-1"><Lock className="w-3 h-3" /> You can only enter scores for your assigned subjects</span>}

@@ -232,15 +232,13 @@ export default function TeacherDashboard() {
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-4 pb-10">
         {employee ?
         <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 space-y-4">
-                {/* My Classroom */}
-                <SectionBar icon={GraduationCap} label="My Classroom" action={
+            {/* My Classroom — full width top */}
+            <div className="space-y-4">
+              <SectionBar icon={GraduationCap} label="My Classroom" action={
               <button onClick={() => setShowSyncClass(true)} className="text-xs font-medium text-white bg-[#00838F] px-2.5 py-1 rounded-lg flex items-center gap-1 hover:brightness-105"><CheckCircle2 className="w-3.5 h-3.5" /> Sync Class</button>
               } />
             {myClasses.length === 0 ?
               <Card><p className="text-sm text-gray-400 text-center py-6">No classes linked yet. Use "Sync Class" to link classes you teach or advise.</p></Card> :
-
               <div className="flex gap-3 overflow-x-auto kp-scroll-thin pb-2">
                 {myClasses.map((item, idx) => {
                   const c = item.class;
@@ -263,31 +261,23 @@ export default function TeacherDashboard() {
                       {first && <div className="text-[11px] font-semibold text-[#00838F] mt-1.5 truncate">{first.subject_name}</div>}
                       {first && <div className="text-[11px] text-[#546E7A] flex items-center gap-1"><Clock className="w-3 h-3" /> {first.start_time} - {first.end_time}</div>}
                     </button>);
-
                 })}
               </div>
               }
-              </div>
-
-              {/* Announcements (top right) */}
-              <div className="lg:col-span-1">
-                <Card className="lg:sticky lg:top-4">
-                  <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> Announcements</h3>
-                  <AnnouncementList announcements={announcements} onAdd={() => setShowAnnModal(true)} addLabel="Record Announcement" maxHeight="240px" />
-                </Card>
-              </div>
             </div>
 
-            {/* Today's Class Schedule */}
-            <Card>
-              <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Class Schedule</h3>
-                {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> :
-            <div className="relative pl-6">
+            {/* Today's Class Schedule + Announcements side by side */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2">
+                <Card>
+                  <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Calendar className="w-5 h-5 text-[#006064]" /> Today's Class Schedule</h3>
+                  {schedules.length === 0 ? <p className="text-sm text-gray-400 text-center py-6">No classes scheduled today.</p> :
+                  <div className="relative pl-6">
                     <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-[#B2EBF2]" />
                     {schedules.map((s) => {
-                const SIcon = subjectIcon(s.subject_name);
-                return (
-                  <div key={s.id} className="relative mb-3 last:mb-0">
+                      const SIcon = subjectIcon(s.subject_name);
+                      return (
+                        <div key={s.id} className="relative mb-3 last:mb-0">
                           <div className="absolute -left-[18px] top-1 w-3.5 h-3.5 rounded-full bg-[#00BCD4] border-2 border-white shadow" />
                           <div className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-2.5 shadow-sm">
                             <div className="w-9 h-9 rounded-lg bg-[#E0F7FA] flex items-center justify-center shrink-0"><SIcon className="w-4 h-4 text-[#006064]" /></div>
@@ -298,18 +288,26 @@ export default function TeacherDashboard() {
                             <div className="text-xs font-medium text-[#006064] shrink-0">{s.start_time} - {s.end_time}</div>
                           </div>
                         </div>);
+                    })}
+                  </div>}
+                </Card>
+              </div>
 
-              })}
-                  </div>
-            }
-              </Card>
+              {/* Announcements (right) */}
+              <div className="lg:col-span-1">
+                <Card className="lg:sticky lg:top-4">
+                  <h3 className="text-base font-bold text-[#004D40] mb-3 flex items-center gap-2"><Megaphone className="w-5 h-5 text-[#006064]" /> Announcements</h3>
+                  <AnnouncementList announcements={announcements} onAdd={() => setShowAnnModal(true)} addLabel="Record Announcement" maxHeight="240px" />
+                </Card>
+              </div>
+            </div>
 
             {/* Tabs */}
             <div className="kp-wave-tabs rounded-xl p-1.5 inline-flex gap-1 w-fit">
               {selectedRole === 'advisory' &&
             <TabBtn active={tab === 'attendance'} onClick={() => setTab('attendance')} icon={ClipboardList}>Attendance</TabBtn>
             }
-              <TabBtn active={tab === 'gradebook'} onClick={() => setTab('gradebook')} icon={Award}>Gradebook</TabBtn>
+              <TabBtn active={tab === 'gradebook'} onClick={() => setTab('gradebook')} icon={Award}>Score Records</TabBtn>
             </div>
 
             {tab === 'attendance' ?
