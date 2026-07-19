@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, KpButton, KpInput, KpSelect, StatusBadge, Avatar } from '@/components/kp/ui';
 import EmployeeDTR from '@/components/kp/EmployeeDTR';
-import { Upload, Save, User, AlertTriangle, GraduationCap, Briefcase, IdCard, Gift, Wallet, Calendar, ArrowLeft, QrCode } from 'lucide-react';
+import { Upload, Save, User, AlertTriangle, GraduationCap, Briefcase, IdCard, Gift, Wallet, Calendar, ArrowLeft, QrCode, Megaphone } from 'lucide-react';
+import AnnouncementList from '@/components/kp/AnnouncementList';
 
 const sections = [
   { id: 'information', label: 'Information', icon: User },
@@ -14,6 +15,7 @@ const sections = [
   { id: 'benefits', label: 'Benefits', icon: Gift },
   { id: 'payroll', label: 'Payroll', icon: Wallet },
   { id: 'attendance', label: 'Attendance History', icon: Calendar },
+  { id: 'announcements', label: 'Announcements', icon: Megaphone },
 ];
 
 export default function EmployeeProfile() {
@@ -24,12 +26,18 @@ export default function EmployeeProfile() {
   const [active, setActive] = useState('information');
   const [saving, setSaving] = useState(false);
   const [attendance, setAttendance] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
 
   useEffect(() => {
     Promise.all([
       base44.entities.Employee.get(id),
       base44.entities.Attendance.filter({ person_id: id }).catch(() => []),
-    ]).then(([e, att]) => { setEmployee(e); setAttendance(att); }).finally(() => setLoading(false));
+      base44.entities.Announcement.list('-created_date', 50).catch(() => []),
+    ]).then(([e, att, anns]) => {
+      setEmployee(e);
+      setAttendance(att);
+      setAnnouncements(anns.filter(a => a.author_id === id || a.audience === 'teacher'));
+    }).finally(() => setLoading(false));
   }, [id]);
 
   const update = (field, value) => setEmployee({ ...employee, [field]: value });
@@ -198,8 +206,14 @@ export default function EmployeeProfile() {
             {active === 'attendance' && (
               <EmployeeDTR employee={employee} attendance={attendance} />
             )}
+            {active === 'announcements' && (
+              <>
+                <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-4 flex items-center gap-2"><Megaphone className="w-4 h-4" /> Announcements by {employee.first_name}</h3>
+                <AnnouncementList announcements={announcements} maxHeight="400px" emptyMessage="This teacher has not posted any announcements" />
+              </>
+            )}
 
-            {active !== 'attendance' && (
+            {active !== 'attendance' && active !== 'announcements' && (
               <div className="flex justify-end mt-6">
                 <KpButton variant="green" onClick={handleSave} disabled={saving}><Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save'}</KpButton>
               </div>

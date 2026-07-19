@@ -13,6 +13,7 @@ import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Dashboard from '@/pages/Dashboard';
+import DashboardRouter from '@/pages/DashboardRouter';
 import SchoolProfile from '@/pages/SchoolProfile';
 import AccountSettings from '@/pages/AccountSettings';
 import UserAccounts from '@/pages/UserAccounts';
@@ -59,7 +60,7 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<DashboardRouter />} />
           <Route path="/school-profile" element={<SchoolProfile />} />
           <Route path="/account-settings" element={<AccountSettings />} />
           <Route path="/user-accounts" element={<UserAccounts />} />

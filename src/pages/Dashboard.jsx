@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { PagePanel, PageTitle, StatusBadge, Avatar } from '@/components/kp/ui';
-import { Users, UserCheck, UserX, Clock, TrendingUp, CloudSun, Shield, Calendar, LogIn, LogOut, Megaphone } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, TrendingUp, CloudSun, Shield, Calendar, LogIn, LogOut, Megaphone, Plus } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import WeatherMonitor from '@/components/kp/WeatherMonitor';
+import AnnouncementList from '@/components/kp/AnnouncementList';
+import AnnouncementModal from '@/components/kp/AnnouncementModal';
 
 function StatCard({ icon: Icon, label, value, sub, color }) {
   return (
@@ -42,12 +46,18 @@ function InOutCard({ title, inside, outside, total }) {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [now, setNow] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ present: 0, absent: 0, late: 0, totalStudents: 0, studentsIn: 0, studentsOut: 0, teachersIn: 0, teachersOut: 0 });
   const [announcements, setAnnouncements] = useState([]);
   const [checkins, setCheckins] = useState([]);
   const [schedule, setSchedule] = useState([]);
+  const [showAnnModal, setShowAnnModal] = useState(false);
+
+  const loadAnnouncements = () => {
+    base44.entities.Announcement.list('-created_date', 10).then(setAnnouncements).catch(() => {});
+  };
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -81,6 +91,8 @@ export default function Dashboard() {
       setSchedule(sched);
     }).finally(() => setLoading(false));
   }, []);
+
+  const reloadAnnouncements = () => { loadAnnouncements(); };
 
   const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -171,23 +183,17 @@ export default function Dashboard() {
         </PagePanel>
 
         <PagePanel>
-          <div className="flex items-center gap-2 mb-4">
-            <Megaphone className="w-4 h-4 text-[hsl(var(--kp-teal))]" />
-            <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">Announcements</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Megaphone className="w-4 h-4 text-[hsl(var(--kp-teal))]" />
+              <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">Announcements</h3>
+            </div>
+            <button onClick={() => setShowAnnModal(true)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--kp-green))] text-white text-xs font-medium hover:bg-[hsl(var(--kp-green-dark))]">
+              <Plus className="w-3.5 h-3.5" /> Record
+            </button>
           </div>
-          <div className="space-y-3 max-h-[260px] overflow-y-auto kp-scroll-thin">
-            {announcements.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-8">No announcements</p>
-            ) : announcements.map(a => (
-              <div key={a.id} className="p-3 rounded-lg bg-gray-50 border border-gray-100">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`w-2 h-2 rounded-full ${a.priority === 'urgent' ? 'bg-red-500' : a.priority === 'high' ? 'bg-orange-500' : 'bg-green-500'}`} />
-                  <span className="text-sm font-medium text-[hsl(var(--kp-teal))]">{a.title}</span>
-                </div>
-                <p className="text-xs text-gray-500 line-clamp-2">{a.content}</p>
-              </div>
-            ))}
-          </div>
+          <AnnouncementList announcements={announcements} maxHeight="260px" />
+          <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} user={user} />
         </PagePanel>
       </div>
 
@@ -219,15 +225,7 @@ export default function Dashboard() {
             <CloudSun className="w-4 h-4 text-[hsl(var(--kp-teal))]" />
             <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">Weather & Safety</h3>
           </div>
-          <div className="text-center py-3">
-            <CloudSun className="w-12 h-12 text-[hsl(var(--kp-orange))] mx-auto mb-2" />
-            <div className="text-2xl font-bold text-[hsl(var(--kp-teal))]">31°C</div>
-            <div className="text-sm text-gray-500">Partly Cloudy</div>
-          </div>
-          <div className="mt-3 p-3 rounded-lg bg-green-50 border border-green-100 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-[hsl(var(--kp-green))]" />
-            <span className="text-xs font-medium text-[hsl(var(--kp-green))]">All systems safe</span>
-          </div>
+          <WeatherMonitor />
         </PagePanel>
       </div>
 

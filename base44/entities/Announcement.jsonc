@@ -20,6 +20,35 @@
         "urgent"
       ],
       "default": "normal"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "school_announcement",
+        "class_announcement",
+        "weather_alert",
+        "event"
+      ],
+      "default": "school_announcement"
+    },
+    "audience": {
+      "type": "string",
+      "enum": [
+        "school",
+        "class",
+        "teacher"
+      ],
+      "default": "school"
+    },
+    "target_class": {
+      "type": "string",
+      "description": "Grade-Section for class-scoped announcements"
+    },
+    "author_id": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
     }
   },
   "required": [
