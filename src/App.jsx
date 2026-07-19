@@ -28,6 +28,7 @@ import IDMaker from '@/pages/IDMaker';
 import AttendanceScanner from '@/pages/AttendanceScanner';
 import Reports from '@/pages/Reports';
 import DownloadSource from '@/pages/DownloadSource';
+import ClassroomSync from '@/pages/ClassroomSync';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -76,6 +77,7 @@ const AuthenticatedApp = () => {
           <Route path="/attendance" element={<AttendanceScanner />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/download-source" element={<DownloadSource />} />
+          <Route path="/classroom-sync" element={<ClassroomSync />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

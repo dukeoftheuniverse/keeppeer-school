@@ -123,6 +123,10 @@
     "attendance_late": {
       "type": "number",
       "default": 0
+    },
+    "classroom_email": {
+      "type": "string",
+      "description": "Google Classroom email of the student, used for roster sync deduplication"
     }
   },
   "required": [
