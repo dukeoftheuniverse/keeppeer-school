@@ -461,7 +461,7 @@ export default function TeacherDashboard() {
 }
 
 function Card({ children, className = '' }) {
-  return <div className={`rounded-2xl shadow-md sm:p-5 py-4 opacity-100 bg-[#6eced8] ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl shadow-md sm:p-5 py-4 opacity-100 bg-[#9ef5ff] ${className}`}>{children}</div>;
 }
 function SectionBar({ icon: Icon, label, action }) {
   return (
