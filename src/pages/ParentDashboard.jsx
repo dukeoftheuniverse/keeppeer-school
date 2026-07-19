@@ -3,11 +3,12 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import DashHeader from '@/components/kp/DashHeader';
 import AnnouncementList from '@/components/kp/AnnouncementList';
+import ChatModal from '@/components/kp/ChatModal';
 import { logAudit } from '@/lib/audit';
 import {
   Calendar, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon, Megaphone, Award,
   Clock, Loader2, Plus, QrCode, Trash2, ChevronRight, MapPin, GraduationCap, CheckCircle2,
-  ClipboardCheck, BadgeCheck, School as SchoolIcon
+  ClipboardCheck, BadgeCheck, School as SchoolIcon, MessageSquare
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
@@ -35,6 +36,7 @@ export default function ParentDashboard() {
   const [lrnInput, setLrnInput] = useState('');
   const [linking, setLinking] = useState(false);
   const [linkMsg, setLinkMsg] = useState('');
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -102,6 +104,7 @@ export default function ParentDashboard() {
   const todayCheckin = attendance.find(a => a.date === new Date().toLocaleDateString('en-CA') && a.scan_type === 'time_in');
   const schoolAnn = announcements.filter(a => a.audience === 'school');
   const classAnn = announcements.filter(a => a.audience === 'class' && (!a.target_class || (selected && a.target_class === `${selected.grade} - ${selected.section}`)));
+  const chatMe = { id: user?.id, name: user?.full_name || 'Parent', email: user?.email, role: 'parent' };
 
   return (
     <div className="bg-[#E0F7FA] min-h-screen">
@@ -316,6 +319,11 @@ export default function ParentDashboard() {
           </>
         )}
       </main>
+
+      <button onClick={() => setShowChat(true)} className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#00838F] text-white shadow-lg flex items-center justify-center hover:brightness-105" title="Messages">
+        <MessageSquare className="w-6 h-6" />
+      </button>
+      <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="parent" />
     </div>
   );
 }

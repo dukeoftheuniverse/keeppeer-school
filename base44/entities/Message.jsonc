@@ -1,0 +1,50 @@
+{
+  "name": "Message",
+  "type": "object",
+  "properties": {
+    "conversation_id": {
+      "type": "string",
+      "description": "Stable id: sorted [emailA, emailB] joined by ||"
+    },
+    "sender_email": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "sender_role": {
+      "type": "string",
+      "enum": [
+        "teacher",
+        "parent",
+        "admin"
+      ]
+    },
+    "recipient_email": {
+      "type": "string"
+    },
+    "recipient_name": {
+      "type": "string"
+    },
+    "recipient_role": {
+      "type": "string",
+      "enum": [
+        "teacher",
+        "parent",
+        "admin"
+      ]
+    },
+    "body": {
+      "type": "string"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "conversation_id",
+    "sender_email",
+    "body"
+  ]
+}

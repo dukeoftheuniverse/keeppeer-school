@@ -4,7 +4,7 @@ import { Loader2, Save, Award, ClipboardList, Lock } from 'lucide-react';
 
 const ACTIVITIES = ['Quiz', 'Summative Test', 'Activity', 'Project', 'Exam'];
 
-export default function GradebookPanel({ classInfo, teacher, role }) {
+export default function GradebookPanel({ classInfo, teacher, role, onStudentClick }) {
   const [students, setStudents] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [grades, setGrades] = useState([]);
@@ -107,9 +107,11 @@ export default function GradebookPanel({ classInfo, teacher, role }) {
               <option value="">Subject</option>
               {subjects.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select value={form.activity} onChange={e => setForm({ ...form, activity: e.target.value })} className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm bg-white">
+            <input list="kp-activities-gb" value={form.activity} onChange={e => setForm({ ...form, activity: e.target.value })} placeholder="Activity" className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm bg-white" />
+            <datalist id="kp-activities-gb">
               {ACTIVITIES.map(a => <option key={a} value={a}>{a}</option>)}
-            </select>
+              <option>Assignment</option>
+            </datalist>
             <input type="number" value={form.score} onChange={e => setForm({ ...form, score: e.target.value })} placeholder="Score" className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm" />
             <input type="number" value={form.total} onChange={e => setForm({ ...form, total: e.target.value })} placeholder="Total" className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm" />
             <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="px-2.5 py-2 rounded-lg border border-gray-200 text-sm col-span-2 sm:col-span-1" />
@@ -136,7 +138,7 @@ export default function GradebookPanel({ classInfo, teacher, role }) {
                 {students.map(s => (
                   <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="py-2 px-2 sticky left-0 bg-white">
-                      <div className="text-sm font-medium text-[hsl(var(--kp-teal))] truncate">{s.first_name} {s.last_name}</div>
+                      <button onClick={() => onStudentClick?.(s)} className="text-sm font-medium text-[hsl(var(--kp-teal))] truncate hover:underline text-left" title="View grade history">{s.first_name} {s.last_name}</button>
                     </td>
                     {subjects.map(sub => {
                       const p = avgFor(s.id, sub);

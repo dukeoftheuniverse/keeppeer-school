@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { printHTML } from '@/lib/print';
 import {
   Award, Plus, Trash2, BookOpen, ClipboardList, Calendar, X, BadgeCheck,
-  ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap, Eye, EyeOff
+  ChevronRight, Save, Loader2, School as SchoolIcon, GraduationCap, Eye, EyeOff, Printer
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
@@ -77,6 +78,16 @@ export default function StudentProfileView({ student, school, classInfo, teacher
 
   const deleteGrade = async (id) => { await base44.entities.Grade.delete(id); await reload(); };
   const deleteAtt = async (id) => { await base44.entities.Attendance.delete(id); await reload(); };
+
+  const printAttendance = () => {
+    const rows = attendance.slice().reverse().map(a => {
+      const bg = a.status === 'present' ? '#dcfce7' : a.status === 'late' ? '#ffedd5' : '#fee2e2';
+      const fg = a.status === 'present' ? '#166534' : a.status === 'late' ? '#9a3412' : '#991b1b';
+      return `<tr><td>${a.date || '—'}</td><td>${a.time || '—'}</td><td><span class="badge" style="background:${bg};color:${fg}">${a.status || '—'}</span></td><td>${a.scan_type || ''}</td></tr>`;
+    }).join('');
+    printHTML(`${student.first_name} ${student.last_name} - Attendance History`,
+      `<h1>${student.first_name} ${student.last_name} ${student.suffix || ''}</h1><h2>Attendance History</h2><div class="meta">${classInfo ? `${classInfo.grade_level} - ${classInfo.section}` : ''} • Present: ${present} • Absent: ${absent} • Late: ${late} • Generated ${new Date().toLocaleString()}</div><table><thead><tr><th>Date</th><th>Time</th><th>Status</th><th>Type</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="center">No records</td></tr>'}</tbody></table><div class="footer">KeepPeer School • Confidential</div>`);
+  };
 
   const statusColor = (s) => s === 'present' ? 'text-green-600' : s === 'late' ? 'text-orange-500' : 'text-red-500';
 
@@ -186,14 +197,15 @@ export default function StudentProfileView({ student, school, classInfo, teacher
                 <div className="bg-[#E8F9FB] rounded-2xl p-4 space-y-3">
                   <div>
                     <label className="text-sm font-medium text-[#0F766E] block mb-1">Activity</label>
-                    <select value={activity} onChange={e => setActivity(e.target.value)} className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20">
-                      <option value="">Select activity...</option>
+                    <input list="kp-activities" value={activity} onChange={e => setActivity(e.target.value)} placeholder="Select or type activity..." className="w-full px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-[#1F2937] text-sm focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20" />
+                    <datalist id="kp-activities">
                       <option>Quiz</option>
                       <option>Summative Test</option>
                       <option>Activity</option>
                       <option>Project</option>
                       <option>Exam</option>
-                    </select>
+                      <option>Assignment</option>
+                    </datalist>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
@@ -235,7 +247,10 @@ export default function StudentProfileView({ student, school, classInfo, teacher
               </div>
             ) : (
               <div>
-                <h3 className="text-sm font-bold text-[#004D40] mb-3 flex items-center gap-2"><ClipboardList className="w-4 h-4 text-[#00838F]" /> Attendance History</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-[#004D40] flex items-center gap-2"><ClipboardList className="w-4 h-4 text-[#00838F]" /> Attendance History</h3>
+                  <button onClick={printAttendance} className="text-xs font-medium text-white bg-[#00838F] px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:brightness-105"><Printer className="w-3.5 h-3.5" /> Print</button>
+                </div>
                 {loading ? <div className="py-6 flex justify-center"><Loader2 className="w-6 h-6 text-[#00838F] animate-spin" /></div> :
                   attendance.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No attendance records yet.</p> :
                   <div className="space-y-2">

@@ -10,10 +10,12 @@ import AddStudentModal from '@/components/kp/AddStudentModal';
 import SyncClassModal from '@/components/kp/SyncClassModal';
 import GradebookPanel from '@/components/kp/GradebookPanel';
 import { logAudit } from '@/lib/audit';
+import { printHTML } from '@/lib/print';
+import ChatModal from '@/components/kp/ChatModal';
 import {
   ClipboardList, GraduationCap, BookOpen, FlaskConical, Coffee, Calculator, Home as HomeIcon,
   UserCheck, UserX, Clock, Plus, Save, Calendar, Megaphone, Award, ChevronRight, Users,
-  CheckCircle2, Loader2, CloudSun, Search
+  CheckCircle2, Loader2, CloudSun, Search, Printer, MessageSquare
 } from 'lucide-react';
 
 const STATUS_OPT = [
@@ -52,6 +54,7 @@ export default function TeacherDashboard() {
   const [profileStudent, setProfileStudent] = useState(null);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showSyncClass, setShowSyncClass] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [tab, setTab] = useState('attendance'); // attendance | grades
 
   // grades state
@@ -204,6 +207,15 @@ export default function TeacherDashboard() {
     finally { setSavingGrades(false); }
   };
 
+  const printAttendance = () => {
+    if (!selectedClass) return;
+    const rows = students.map(s => `<tr><td>${s.last_name}, ${s.first_name}</td><td>${s.lrn || s.student_id || ''}</td><td>${marks[s.id] || '—'}</td><td>${s.inside_status || ''}</td></tr>`).join('');
+    printHTML(`Grade ${selectedClass.grade_level} - ${selectedClass.section} Attendance`,
+      `<h1>Grade ${selectedClass.grade_level} - ${selectedClass.section}</h1><h2>Daily Attendance</h2><div class="meta">${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} • Present: ${present} • Absent: ${absent} • Late: ${late}</div><table><thead><tr><th>Student</th><th>LRN</th><th>Status</th><th>Inside</th></tr></thead><tbody>${rows}</tbody></table><div class="footer">KeepPeer School • Confidential</div>`);
+  };
+
+  const chatMe = { id: employee?.id, name: employee ? `${employee.first_name} ${employee.last_name}` : (user?.full_name || 'Teacher'), email: employee?.email || user?.email, role: 'teacher' };
+
   const reloadAnnouncements = () => {
     base44.entities.Announcement.list('-created_date', 30).then(anns => {
       setAnnouncements(anns.filter(a => !employee || a.author_id === employee.id || a.audience === 'school' || a.audience === 'class'));
@@ -331,6 +343,7 @@ export default function TeacherDashboard() {
                     {selectedRole === 'advisory' && (
                       <button onClick={() => setShowAddStudent(true)} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium hover:brightness-110 flex items-center gap-1.5"><Plus className="w-4 h-4" /> Add Student</button>
                     )}
+                    <button onClick={printAttendance} disabled={!selectedClass} className="px-4 py-2 rounded-lg bg-white border border-[#00838F] text-[#00838F] text-sm font-medium hover:bg-[#E0F7FA] flex items-center gap-1.5 disabled:opacity-50"><Printer className="w-4 h-4" /> Print</button>
                     <button onClick={handleSaveAttendance} disabled={saving} className="px-4 py-2 rounded-lg bg-[#00BCD4] text-white text-sm font-medium hover:brightness-110 disabled:opacity-50 flex items-center gap-1.5">
                       {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save
                     </button>
@@ -356,7 +369,7 @@ export default function TeacherDashboard() {
                 </Card>
               </div>
             ) : (
-              <GradebookPanel classInfo={selectedClass} teacher={employee} role={selectedRole} />
+              <GradebookPanel classInfo={selectedClass} teacher={employee} role={selectedRole} onStudentClick={(s) => setProfileStudent(s)} />
             )}
 
             {/* Today's Class Schedule */}
@@ -411,6 +424,11 @@ export default function TeacherDashboard() {
       <SyncClassModal open={showSyncClass} onClose={() => setShowSyncClass(false)} onLinked={() => load()} teacher={employee} />
 
       <AnnouncementModal open={showAnnModal} onClose={() => setShowAnnModal(false)} onCreated={reloadAnnouncements} defaultAudience="class" defaultClass={selectedClass ? `${selectedClass.grade_level} - ${selectedClass.section}` : ''} user={user} />
+
+      <button onClick={() => setShowChat(true)} className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full bg-[#00838F] text-white shadow-lg flex items-center justify-center hover:brightness-105" title="Messages">
+        <MessageSquare className="w-6 h-6" />
+      </button>
+      <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="teacher" />
     </div>
   );
 }

@@ -19,14 +19,7 @@
     },
     "activity_type": {
       "type": "string",
-      "enum": [
-        "Quiz",
-        "Summative Test",
-        "Activity",
-        "Project",
-        "Exam"
-      ],
-      "description": "Type of assessment recorded"
+      "description": "Type of assessment recorded (Quiz, Summative Test, Activity, Project, Exam, Assignment, or custom)"
     },
     "teacher_id": {
       "type": "string"
