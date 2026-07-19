@@ -279,7 +279,7 @@ export default function StudentProfileView({ student, school, classInfo, teacher
         </div>
       </div>
 
-      <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="teacher" presetContact={student.parent_email ? { email: student.parent_email, name: student.parent_name || student.parent_email, role: 'parent', sub: `Parent of ${student.first_name} ${student.last_name}` } : null} />
+      <ChatModal open={showChat} onClose={() => setShowChat(false)} me={chatMe} mode="teacher" student={student} presetContact={student.parent_email ? { email: student.parent_email, name: student.parent_name || student.parent_email, role: 'parent', sub: `Parent of ${student.first_name} ${student.last_name}` } : null} />
     </div>
   );
 }

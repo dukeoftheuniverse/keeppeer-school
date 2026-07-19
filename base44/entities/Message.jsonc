@@ -40,6 +40,13 @@
     "read": {
       "type": "boolean",
       "default": false
+    },
+    "student_id": {
+      "type": "string",
+      "description": "Student this message concerns, for profile-linked tracking"
+    },
+    "student_name": {
+      "type": "string"
     }
   },
   "required": [

@@ -8,7 +8,7 @@ function convId(a, b) { return [a, b].map(s => (s || '').toLowerCase()).sort().j
 
 const roleBadge = (r) => r === 'admin' ? 'bg-red-100 text-red-700' : r === 'teacher' ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-green-700';
 
-export default function ChatModal({ open, onClose, me, mode, presetContact }) {
+export default function ChatModal({ open, onClose, me, mode, presetContact, student }) {
   const [contacts, setContacts] = useState([]);
   const [allMessages, setAllMessages] = useState([]);
   const [active, setActive] = useState(null);
@@ -97,7 +97,11 @@ export default function ChatModal({ open, onClose, me, mode, presetContact }) {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [allMessages, active]);
 
-  const thread = active ? allMessages.filter(m => m.conversation_id === convId(me.email, active.email)) : [];
+  const thread = active ? allMessages.filter(m => {
+    if (m.conversation_id !== convId(me.email, active.email)) return false;
+    if (student) return m.student_id === student.id;
+    return true;
+  }) : [];
   const unreadFor = (c) => allMessages.filter(m => m.conversation_id === convId(me.email, c.email) && (m.recipient_email || '').toLowerCase() === (me.email || '').toLowerCase() && !m.read).length;
 
   const send = async () => {
@@ -110,6 +114,8 @@ export default function ChatModal({ open, onClose, me, mode, presetContact }) {
         sender_email: me.email, sender_name: me.name, sender_role: me.role,
         recipient_email: active.email, recipient_name: active.name, recipient_role: active.role,
         body: text.trim(), read: false,
+        student_id: student?.id || '',
+        student_name: student ? `${student.first_name} ${student.last_name}` : '',
       });
       setText('');
     } catch (e) { /* */ }
@@ -166,6 +172,7 @@ export default function ChatModal({ open, onClose, me, mode, presetContact }) {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold text-[hsl(var(--kp-teal))] truncate">{active.name}</div>
                   <div className="flex items-center gap-1.5"><span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${roleBadge(active.role)}`}>{active.role}</span><span className="text-[11px] text-gray-400 truncate">{active.sub}</span></div>
+                  {student && <div className="text-[10px] mt-0.5 inline-flex items-center gap-1 text-[#0F766E] bg-[#E0F7FA] px-1.5 py-0.5 rounded">Re: {student.first_name} {student.last_name}</div>}
                 </div>
                 <button onClick={onClose} className="text-gray-400 hover:text-gray-600 hidden sm:block"><X className="w-4 h-4" /></button>
               </div>
