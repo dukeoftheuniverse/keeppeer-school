@@ -4,11 +4,12 @@ import CameraViewfinder from '@/components/kp/CameraViewfinder';
 import { Avatar } from '@/components/kp/ui';
 import { logAudit, createNotification } from '@/lib/audit';
 import {
-  ScanFace, Search, CheckCircle2, XCircle, Loader2, RefreshCw, AlertTriangle,
-  LogIn, LogOut, UserCheck, Clock, Users, Frown, Users2
+  ScanFace, CheckCircle2, XCircle, Loader2, Pause, Play, AlertTriangle,
+  LogIn, LogOut, UserCheck, Clock, Users, Frown, Users2, ShieldAlert
 } from 'lucide-react';
 
 const MAX_CANDIDATES = 8;
+const SCAN_INTERVAL = 6000; // auto-scan every 6s
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
@@ -21,13 +22,16 @@ function StatCard({ icon: Icon, label, value, color }) {
 
 export default function AttendanceScanner() {
   const camRef = useRef(null);
+  const phaseRef = useRef('idle');
+  const scanRef = useRef(null);
   const [people, setPeople] = useState([]);
   const [logbook, setLogbook] = useState([]);
   const [search, setSearch] = useState('');
   const [phase, setPhase] = useState('idle'); // idle | scanning | success | fail
-  const [results, setResults] = useState([]); // [{ok, person, confidence, type, time, status, insideStatus, error}]
+  const [results, setResults] = useState([]); // [{ok, person, confidence, type, time, status, insideStatus, unknown, error}]
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [paused, setPaused] = useState(false);
 
   const load = async () => {
     try {
@@ -46,6 +50,7 @@ export default function AttendanceScanner() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
 
   const withPhotos = useMemo(() => people.filter(p => !!p.photo_url), [people]);
 
@@ -109,16 +114,32 @@ export default function AttendanceScanner() {
     }
   };
 
+  // Log an unrecognized face as a security alert (foreign contaminant / possible intruder)
+  const logUnknownFace = async (file_url, count, mixed) => {
+    const ts = new Date().toLocaleString();
+    try {
+      await base44.entities.SecurityAlert.create({
+        alertType: 'Unregistered Face Repeated',
+        severity: mixed ? 'High' : 'Critical',
+        location: 'Attendance Scanner',
+        description: `Unknown / foreign contaminant person detected at ${ts}. ${count} unrecognized face(s) captured. Possible intruder — review frame. Frame: ${file_url}`,
+        timestamp: new Date().toISOString(),
+        status: 'Open',
+      });
+      await logAudit('security_alert', 'SecurityAlert', '', `Foreign contaminant person detected — ${count} unknown face(s). Frame saved.`);
+    } catch (e) { /* */ }
+  };
+
   const scanFace = async () => {
     setError(null);
     setResults([]);
 
-    if (!camRef.current || !camRef.current.isStreaming()) { setError('Camera is still starting. Please wait a moment.'); return; }
-    if (candidates.length === 0) { setError('No reference photos available. Record faces on student/staff profiles first.'); return; }
+    if (!camRef.current || !camRef.current.isStreaming()) { return; }
+    if (candidates.length === 0) { setError('No facial specimens enrolled yet. Record faces on student/staff profiles first.'); return; }
 
     setPhase('scanning');
     const dataURL = camRef.current.capture();
-    if (!dataURL) { setError('Could not capture a frame. Please retry.'); setPhase('fail'); return; }
+    if (!dataURL) { setPhase('idle'); return; }
 
     try {
       const blob = await (await fetch(dataURL)).blob();
@@ -133,7 +154,7 @@ ${candidates.map((p, i) => `#${i + 2} — ${p.name} (${p.type})`).join('\n')}
 
 Identify every visible face in image #1 and match it to the best matching reference image (if any). Return a match for EACH distinct face detected.
 - matched_index: 1-based index of the matching reference (1 = first reference, i.e. image #2).
-- confidence: 0–100. Only include matches with confidence >= 55. If a face has no good reference match, omit it.
+- confidence: 0–100. Only include matches with confidence >= 55. If a face has no good reference match, omit it from matches but count it in total_faces.
 Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": number, "confidence": number}], "reason": string}`;
 
       const llm = await base44.integrations.Core.InvokeLLM({
@@ -160,11 +181,19 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
 
       const matches = Array.isArray(llm?.matches) ? llm.matches : [];
       const valid = matches.filter(m => m.matched_index != null && m.matched_index >= 1 && m.matched_index <= candidates.length && Number(m.confidence) >= 55);
+      const totalFaces = Number(llm?.total_faces) || 0;
+      const unknownCount = Math.max(0, totalFaces - valid.length);
+
+      // Unknown / foreign faces → log security alert regardless
+      if (unknownCount > 0) await logUnknownFace(file_url, unknownCount, valid.length > 0);
 
       if (valid.length === 0) {
-        setResults([{ ok: false, person: null, confidence: Math.round(Number(matches[0]?.confidence) || 0), error: llm?.reason || 'No confident match' }]);
+        if (unknownCount > 0) {
+          setResults([{ ok: false, person: null, unknown: true, confidence: 0, error: `${unknownCount} unknown / foreign contaminant person(s) detected — logged as possible intruder.` }]);
+        } else {
+          setResults([{ ok: false, person: null, confidence: 0, error: llm?.reason || 'No face detected' }]);
+        }
         setPhase('fail');
-        await logAudit('facial_scan_failed', 'Attendance', '', `No match: ${llm?.reason || ''}`);
         return;
       }
 
@@ -174,34 +203,53 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
         const conf = Math.round(Number(m.confidence) || 0);
         outcomes.push(await recordAttendance(person, conf));
       }
+      if (unknownCount > 0) {
+        outcomes.push({ ok: false, person: null, unknown: true, error: `${unknownCount} unknown / foreign contaminant person(s) detected — logged as possible intruder.` });
+      }
       setResults(outcomes);
       setPhase(outcomes.some(o => o.ok) ? 'success' : 'fail');
       load();
     } catch (e) {
-      setError('AI identification failed: ' + (e?.message || 'unexpected error') + '. Please retry.');
+      setError('AI identification failed: ' + (e?.message || 'unexpected error') + '.');
       setPhase('fail');
     }
   };
 
-  const reset = () => { setPhase('idle'); setResults([]); setError(null); };
+  scanRef.current = scanFace;
+
+  // Auto-scan loop — no button needed
+  useEffect(() => {
+    if (paused) return;
+    const first = setTimeout(() => { if (phaseRef.current === 'idle' && camRef.current?.isStreaming()) scanRef.current(); }, 4000);
+    const id = setInterval(() => { if (phaseRef.current === 'idle' && camRef.current?.isStreaming()) scanRef.current(); }, SCAN_INTERVAL);
+    return () => { clearTimeout(first); clearInterval(id); };
+  }, [paused]);
+
+  // Auto-reset to idle after a result so the next interval fires
+  useEffect(() => {
+    if (phase === 'success' || phase === 'fail') {
+      const t = setTimeout(() => setPhase('idle'), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
 
   const today = new Date().toLocaleDateString('en-CA');
   const todays = logbook.filter(a => a.date === today);
   const present = todays.filter(a => a.status === 'present').length;
   const late = todays.filter(a => a.status === 'late').length;
   const inside = people.filter(p => p.inside_status === 'inside').length;
-
   const okCount = results.filter(r => r.ok).length;
+  const unknownCount = results.filter(r => r.unknown).length;
 
   const frameColor = phase === 'scanning' ? 'border-yellow-400 animate-pulse'
-    : phase === 'success' ? 'border-green-400' : phase === 'fail' ? 'border-red-400' : 'border-white/70';
+    : phase === 'success' ? 'border-green-400' : phase === 'fail' ? (unknownCount > 0 ? 'border-red-500' : 'border-red-400') : 'border-white/70';
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <ScanFace className="w-5 h-5 text-[hsl(var(--kp-teal))]" />
         <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--kp-teal))]">Attendance</h1>
-        <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-semibold flex items-center gap-1"><Users2 className="w-3 h-3" /> MULTI-FACE AI</span>
+        <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-semibold flex items-center gap-1"><Users2 className="w-3 h-3" /> AUTO · MULTI-FACE AI</span>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -213,7 +261,7 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Scanner */}
         <div className="kp-panel rounded-2xl p-4 sm:p-6 lg:col-span-2">
-          <p className="text-sm text-gray-500 mb-3">The camera is on automatically. Point it at one or more people and tap <strong>Scan Face</strong> — the AI identifies everyone in frame and records each person's attendance.</p>
+          <p className="text-sm text-gray-500 mb-3">The camera is on automatically. It scans every few seconds — point it at one or more people. Enrolled faces are logged with time tracking; unknown faces are flagged as foreign contaminant / possible intruder and recorded for security review.</p>
 
           <div className="mb-4">
             <CameraViewfinder
@@ -241,8 +289,8 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
                 )}
                 {phase === 'fail' && (
                   <div>
-                    <Frown className="w-14 h-14 mx-auto mb-1 text-red-400 drop-shadow" />
-                    <p className="text-red-400 font-bold text-base drop-shadow">Not Recognized</p>
+                    {unknownCount > 0 ? <ShieldAlert className="w-14 h-14 mx-auto mb-1 text-red-500 drop-shadow" /> : <Frown className="w-14 h-14 mx-auto mb-1 text-red-400 drop-shadow" />}
+                    <p className="text-red-400 font-bold text-base drop-shadow">{unknownCount > 0 ? 'Intruder Logged' : 'Not Recognized'}</p>
                   </div>
                 )}
               </div>
@@ -255,36 +303,55 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
             </div>
           )}
 
-          {/* Results — one card per recognized/failed person */}
+          {/* Results — one card per recognized/failed/unknown person */}
           {results.length > 0 && (
             <div className="mb-3 space-y-2">
-              {results.map((r, i) => (
-                <div key={i} className={`p-3 rounded-lg border flex items-center gap-3 text-sm ${r.ok ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                  {r.ok ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
-                  {r.ok ? (
-                    <div className="flex-1">
-                      <span className="font-medium">{r.person.name}</span> — {r.confidence}% confidence. Checked {r.type.replace('_', ' ')} at {r.time}. Now {r.insideStatus}. <span className="capitalize">({r.status})</span>
+              {results.map((r, i) => {
+                if (r.unknown) {
+                  return (
+                    <div key={i} className="p-3 rounded-lg border border-red-300 bg-red-50 flex items-center gap-3 text-sm text-red-800">
+                      <ShieldAlert className="w-5 h-5 shrink-0 text-red-600" />
+                      <div className="flex-1 font-medium">{r.error}</div>
                     </div>
-                  ) : (
-                    <div className="flex-1">
-                      {r.person ? <span className="font-medium">{r.person.name}: </span> : ''}{r.error}
-                    </div>
-                  )}
-                </div>
-              ))}
+                  );
+                }
+                return (
+                  <div key={i} className={`p-3 rounded-lg border flex items-center gap-3 text-sm ${r.ok ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                    {r.ok ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+                    {r.ok ? (
+                      <div className="flex-1">
+                        <span className="font-medium">{r.person.name}</span> — {r.confidence}% confidence. Checked {r.type.replace('_', ' ')} at {r.time}. Now {r.insideStatus}. <span className="capitalize">({r.status})</span>
+                      </div>
+                    ) : (
+                      <div className="flex-1">{r.person ? <span className="font-medium">{r.person.name}: </span> : ''}{r.error}</div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
+          {/* Pause / resume auto-scan */}
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="text-xs text-gray-500 flex items-center gap-1.5">
+              {paused ? <><Pause className="w-3.5 h-3.5" /> Auto-scan paused</> : <><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Auto-scanning every {SCAN_INTERVAL / 1000}s</>}
+            </div>
+            <button onClick={() => setPaused(p => !p)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 ${paused ? 'bg-[hsl(var(--kp-green))] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              {paused ? <><Play className="w-4 h-4" /> Resume</> : <><Pause className="w-4 h-4" /> Pause</>}
+            </button>
+          </div>
+
           {/* Search to narrow candidate gallery */}
           <div className="relative mb-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search to narrow candidates (optional)..."
+            <ScanFace className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Narrow candidates (optional)..."
               className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
           </div>
           <div className="text-xs text-gray-500 mb-3">
-            {withPhotos.length} people have facial specimens. AI will compare against the top {candidates.length} {search.trim() ? 'matching' : 'available'}:
+            {withPhotos.length} people have facial specimens. AI compares against the top {candidates.length} {search.trim() ? 'matching' : 'available'}:
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto kp-scroll-thin mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto kp-scroll-thin">
             {candidates.map(p => (
               <div key={p.id} className="flex flex-col items-center p-2 rounded-lg border border-gray-100 bg-white/50">
                 <Avatar name={p.name} src={p.photo_url} size="w-12 h-12" />
@@ -296,24 +363,6 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
               <p className="text-sm text-gray-400 col-span-full text-center py-4">No facial specimens yet. Record faces on profiles first.</p>
             )}
           </div>
-
-          {phase !== 'success' && (
-            <button onClick={scanFace} disabled={phase === 'scanning' || candidates.length === 0}
-              className="w-full py-3 rounded-xl bg-[hsl(var(--kp-teal))] text-white font-bold text-sm hover:brightness-105 disabled:opacity-50 flex items-center justify-center gap-2">
-              {phase === 'scanning' ? <Loader2 className="w-5 h-5 animate-spin" /> : <ScanFace className="w-5 h-5" />}
-              {phase === 'scanning' ? 'Identifying...' : 'Scan Face'}
-            </button>
-          )}
-          {phase === 'success' && (
-            <button onClick={reset} className="w-full py-3 rounded-xl border border-[hsl(var(--kp-teal))] text-[hsl(var(--kp-teal))] font-bold text-sm hover:bg-[hsl(var(--kp-teal))]/10 flex items-center justify-center gap-2">
-              <RefreshCw className="w-5 h-5" /> Scan Again
-            </button>
-          )}
-          {phase === 'fail' && (
-            <button onClick={reset} className="w-full py-3 rounded-xl bg-[hsl(var(--kp-teal))] text-white font-bold text-sm hover:brightness-105 flex items-center justify-center gap-2">
-              <RefreshCw className="w-5 h-5" /> Try Again
-            </button>
-          )}
         </div>
 
         {/* Recent scans */}
