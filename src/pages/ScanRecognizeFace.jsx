@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import CameraViewfinder from '@/components/kp/CameraViewfinder';
 import {
   ScanFace, Loader2, CheckCircle2, XCircle, Camera, Scan, QrCode, Keyboard,
   Users, Shield, AlertTriangle, RefreshCw, Search, Fingerprint, Clock,
@@ -54,10 +55,17 @@ export default function ScanRecognizeFace() {
   const [qrInput, setQrInput] = useState('');
   const [manualId, setManualId] = useState('');
   const [continuousScans, setContinuousScans] = useState([]);
+  const [cameraActive, setCameraActive] = useState(true);
 
   useEffect(() => {
     base44.entities.FaceEnrollment.filter({ recognitionStatus: 'Active' }).then(setEnrollments).catch(() => {});
   }, []);
+
+  // Camera auto-activates when entering a scan mode; keep live unless on success/fail result
+  useEffect(() => {
+    if (mode === 'Manual Fallback') { setCameraActive(false); return; }
+    setCameraActive(phase !== 'success' && phase !== 'fail');
+  }, [mode, phase]);
 
   const startScan = async () => {
     if (mode === 'One-to-One' && !selectedPerson) { alert('Please select a person to verify.'); return; }
@@ -263,57 +271,66 @@ export default function ScanRecognizeFace() {
         {/* Camera Viewfinder */}
         {mode !== 'Manual Fallback' && (
           <div className="kp-glass-card rounded-2xl p-4 sm:p-6">
-            <div className="relative aspect-[4/3] sm:aspect-video bg-gray-900 rounded-xl overflow-hidden flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className={`w-48 h-64 sm:w-56 sm:h-72 border-4 rounded-[50%] transition-all ${phase === 'matching' ? 'border-yellow-400 animate-pulse' : phase === 'success' ? 'border-green-400' : phase === 'fail' ? 'border-red-400' : 'border-white/60'}`} />
-              </div>
-              <div className="relative z-10 text-center">
+            <CameraViewfinder
+              active={cameraActive}
+              facingMode="user"
+              onError={() => {/* camera errors handled inside component */}}
+              overlay={
+                <>
+                  {/* Face guide frame */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className={`w-48 h-64 sm:w-56 sm:h-72 border-4 rounded-[50%] transition-all ${phase === 'matching' ? 'border-yellow-400 animate-pulse' : phase === 'quality' ? 'border-blue-400' : phase === 'liveness' ? 'border-yellow-400' : phase === 'success' ? 'border-green-400' : phase === 'fail' ? 'border-red-400' : 'border-white/70'}`} />
+                  </div>
+                  {/* Scan line animation */}
+                  {scanning && (
+                    <div className="absolute inset-0 overflow-hidden">
+                      <div className="absolute left-0 right-0 h-0.5 bg-cyan-400/80 shadow-lg shadow-cyan-400/50" style={{ animation: 'scanLine 1.5s ease-in-out infinite', top: '50%' }} />
+                    </div>
+                  )}
+                  <style>{`@keyframes scanLine { 0%,100% { transform: translateY(-100px); } 50% { transform: translateY(100px); } }`}</style>
+                </>
+              }
+            >
+              <div className="text-center pointer-events-none">
                 {phase === 'idle' && (
-                  <div className="text-white/70">
-                    <Camera className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Camera ready — Press scan to begin</p>
+                  <div className="text-white/80 drop-shadow">
+                    <p className="text-sm font-medium">Position your face in the frame, then press scan</p>
                   </div>
                 )}
                 {phase === 'quality' && (
-                  <div className="text-white">
+                  <div className="text-white drop-shadow">
                     <Eye className="w-10 h-10 mx-auto mb-2 animate-pulse text-blue-400" />
                     <p className="text-sm font-medium">Checking face quality...</p>
                   </div>
                 )}
                 {phase === 'liveness' && (
-                  <div className="text-white">
+                  <div className="text-white drop-shadow">
                     <Zap className="w-10 h-10 mx-auto mb-2 animate-pulse text-yellow-400" />
                     <p className="text-sm font-medium">Liveness detection...</p>
                   </div>
                 )}
                 {phase === 'matching' && (
-                  <div className="text-white">
+                  <div className="text-white drop-shadow">
                     <Loader2 className="w-10 h-10 mx-auto mb-2 animate-spin text-white" />
                     <p className="text-sm font-medium">Matching face template...</p>
                   </div>
                 )}
                 {phase === 'success' && result && (
                   <div className="text-center px-4">
-                    <CheckCircle2 className="w-16 h-16 mx-auto mb-2 text-green-400" />
-                    <p className="text-green-400 font-bold text-lg">Recognition Successful</p>
+                    <CheckCircle2 className="w-16 h-16 mx-auto mb-2 text-green-400 drop-shadow" />
+                    <p className="text-green-400 font-bold text-lg drop-shadow">Recognition Successful</p>
                     <span className="inline-block mt-1 text-[10px] bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full font-semibold">SIMULATED</span>
                   </div>
                 )}
                 {phase === 'fail' && result && (
                   <div className="text-center px-4">
-                    <XCircle className="w-16 h-16 mx-auto mb-2 text-red-400" />
-                    <p className="text-red-400 font-bold text-lg">Recognition Failed</p>
+                    <XCircle className="w-16 h-16 mx-auto mb-2 text-red-400 drop-shadow" />
+                    <p className="text-red-400 font-bold text-lg drop-shadow">Recognition Failed</p>
                     <span className="inline-block mt-1 text-[10px] bg-yellow-400/20 text-yellow-300 px-2 py-0.5 rounded-full font-semibold">SIMULATED</span>
                   </div>
                 )}
               </div>
-              {scanning && (
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute left-0 right-0 h-0.5 bg-cyan-400/80 shadow-lg shadow-cyan-400/50" style={{ animation: 'scanLine 1.5s ease-in-out infinite', top: '50%' }} />
-                </div>
-              )}
-              <style>{`@keyframes scanLine { 0%,100% { transform: translateY(-100px); } 50% { transform: translateY(100px); } }`}</style>
-            </div>
+            </CameraViewfinder>
 
             {phase !== 'success' && phase !== 'fail' && (
               <button onClick={startScan} disabled={scanning}
