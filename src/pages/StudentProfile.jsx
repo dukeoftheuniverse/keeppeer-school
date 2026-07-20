@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, KpInput, KpSelect, StatusBadge } from '@/components/kp/ui';
-import { Upload, Save, User, Users, BookOpen, AlertTriangle, HeartPulse, Calendar, ArrowLeft, QrCode } from 'lucide-react';
+import { Upload, Save, User, Users, BookOpen, AlertTriangle, HeartPulse, Calendar, ArrowLeft, QrCode, ScanFace } from 'lucide-react';
+import FaceEnrollModal from '@/components/kp/FaceEnrollModal';
 
 const sections = [
   { id: 'personal', label: 'Personal Information', icon: User },
@@ -22,6 +23,7 @@ export default function StudentProfile() {
   const [active, setActive] = useState('personal');
   const [saving, setSaving] = useState(false);
   const [attendance, setAttendance] = useState([]);
+  const [enrollOpen, setEnrollOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -42,6 +44,12 @@ export default function StudentProfile() {
     if (!file) return;
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     update('photo_url', file_url);
+  };
+
+  const handleEnrollFace = async (fileUrl) => {
+    const updated = { ...student, photo_url: fileUrl };
+    setStudent(updated);
+    await base44.entities.Student.update(id, updated);
   };
 
   if (loading) return <div className="text-center py-12 text-gray-400">Loading...</div>;
@@ -70,6 +78,9 @@ export default function StudentProfile() {
                 <input type="file" className="hidden" onChange={handlePhoto} accept="image/*" />
               </label>
             </div>
+            <button onClick={() => setEnrollOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[hsl(var(--kp-green))] text-white text-xs font-semibold hover:brightness-105 shadow-md">
+              <ScanFace className="w-3.5 h-3.5" /> Record Face
+            </button>
           </div>
 
           <div className="flex-1 min-w-0">
@@ -216,6 +227,8 @@ export default function StudentProfile() {
           </PagePanel>
         </div>
       </div>
+
+      <FaceEnrollModal open={enrollOpen} onClose={() => setEnrollOpen(false)} personName={fullName} onSave={handleEnrollFace} />
     </div>
   );
 }

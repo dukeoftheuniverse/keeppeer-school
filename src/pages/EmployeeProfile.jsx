@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, KpButton, KpInput, KpSelect, StatusBadge, Avatar } from '@/components/kp/ui';
 import EmployeeDTR from '@/components/kp/EmployeeDTR';
-import { Upload, Save, User, AlertTriangle, GraduationCap, Briefcase, IdCard, Gift, Wallet, Calendar, ArrowLeft, QrCode, Megaphone, BookOpen } from 'lucide-react';
+import { Upload, Save, User, AlertTriangle, GraduationCap, Briefcase, IdCard, Gift, Wallet, Calendar, ArrowLeft, QrCode, Megaphone, BookOpen, ScanFace } from 'lucide-react';
 import AnnouncementList from '@/components/kp/AnnouncementList';
+import FaceEnrollModal from '@/components/kp/FaceEnrollModal';
 
 const sections = [
   { id: 'information', label: 'Information', icon: User },
@@ -30,6 +31,7 @@ export default function EmployeeProfile() {
   const [announcements, setAnnouncements] = useState([]);
   const [classes, setClasses] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [enrollOpen, setEnrollOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -62,6 +64,12 @@ export default function EmployeeProfile() {
     update('photo_url', file_url);
   };
 
+  const handleEnrollFace = async (fileUrl) => {
+    const updated = { ...employee, photo_url: fileUrl };
+    setEmployee(updated);
+    await base44.entities.Employee.update(id, updated);
+  };
+
   if (loading) return <div className="text-center py-12 text-gray-400">Loading...</div>;
   if (!employee) return <div className="text-center py-12 text-gray-400">Employee not found</div>;
 
@@ -87,6 +95,9 @@ export default function EmployeeProfile() {
                 <input type="file" className="hidden" onChange={handlePhoto} accept="image/*" />
               </label>
             </div>
+            <button onClick={() => setEnrollOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[hsl(var(--kp-green))] text-white text-xs font-semibold hover:brightness-105 shadow-md">
+              <ScanFace className="w-3.5 h-3.5" /> Record Face
+            </button>
           </div>
 
           <div className="flex-1 min-w-0">
@@ -277,6 +288,8 @@ export default function EmployeeProfile() {
           </PagePanel>
         </div>
       </div>
+
+      <FaceEnrollModal open={enrollOpen} onClose={() => setEnrollOpen(false)} personName={fullName} onSave={handleEnrollFace} />
     </div>
   );
 }

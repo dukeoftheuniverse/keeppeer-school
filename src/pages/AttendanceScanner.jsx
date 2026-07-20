@@ -5,7 +5,7 @@ import { Avatar } from '@/components/kp/ui';
 import { logAudit, createNotification } from '@/lib/audit';
 import {
   ScanFace, Search, CheckCircle2, XCircle, Loader2, RefreshCw, AlertTriangle,
-  LogIn, LogOut, UserCheck, Clock, Users, Frown
+  LogIn, LogOut, UserCheck, Clock, Users, Frown, Users2
 } from 'lucide-react';
 
 const MAX_CANDIDATES = 8;
@@ -25,7 +25,7 @@ export default function AttendanceScanner() {
   const [logbook, setLogbook] = useState([]);
   const [search, setSearch] = useState('');
   const [phase, setPhase] = useState('idle'); // idle | scanning | success | fail
-  const [result, setResult] = useState(null); // { person, confidence, reason }
+  const [results, setResults] = useState([]); // [{ok, person, confidence, type, time, status, insideStatus, error}]
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,10 +47,8 @@ export default function AttendanceScanner() {
 
   useEffect(() => { load(); }, []);
 
-  // People who have a reference photo — these are the only ones AI can identify.
   const withPhotos = useMemo(() => people.filter(p => !!p.photo_url), [people]);
 
-  // Candidate gallery: narrowed by search, capped at MAX_CANDIDATES.
   const candidates = useMemo(() => {
     const base = search.trim()
       ? withPhotos.filter(p => `${p.name} ${p.lrn || ''} ${p.student_id || ''} ${p.employee_id || ''}`.toLowerCase().includes(search.toLowerCase()))
@@ -58,28 +56,21 @@ export default function AttendanceScanner() {
     return base.slice(0, MAX_CANDIDATES);
   }, [withPhotos, search]);
 
+  // Record attendance for one person; returns an outcome object without mutating UI state.
   const recordAttendance = async (person, confidence) => {
     const isStudent = person.type === 'student';
     const accountInactive = isStudent
       ? (person.enrollment_status === 'archived' || person.enrollment_status === 'transferred')
       : (person.status === 'inactive');
-    if (accountInactive) {
-      setError(`${person.name} is ${isStudent ? person.enrollment_status : 'inactive'} and cannot check in.`);
-      return false;
-    }
+    if (accountInactive) return { ok: false, person, confidence, error: `${person.name} is ${isStudent ? person.enrollment_status : 'inactive'}.` };
 
     const today = new Date().toLocaleDateString('en-CA');
     const todays = logbook.filter(a => a.person_id === person.id && a.date === today);
     const last = todays[todays.length - 1];
     const detectedType = last?.scan_type === 'time_in' ? 'time_out' : 'time_in';
 
-    if (detectedType === 'time_in' && last?.scan_type === 'time_in') {
-      setError(`${person.name} already checked in today at ${last.time}. Use Time Out instead.`);
-      return false;
-    }
     if (detectedType === 'time_out' && (!last || last.scan_type !== 'time_in')) {
-      setError(`${person.name} has not checked in yet. Cannot check out.`);
-      return false;
+      return { ok: false, person, confidence, error: `${person.name} has not checked in yet.` };
     }
 
     const now = new Date();
@@ -112,51 +103,38 @@ export default function AttendanceScanner() {
         await base44.entities.Employee.update(person.id, { inside_status: insideStatus });
       }
       await logAudit('facial_scan', 'Attendance', person.id, `${person.name} ${detectedType.replace('_', ' ')} at ${time} - ${confidence}%`);
-      setResult({ person, confidence, type: detectedType, time, status: isLate ? 'late' : 'present', insideStatus });
-      load();
-      return true;
+      return { ok: true, person, confidence, type: detectedType, time, status: isLate ? 'late' : 'present', insideStatus };
     } catch (e) {
-      setError('Network error — could not record attendance. Please retry.');
-      return false;
+      return { ok: false, person, confidence, error: `Network error recording ${person.name}.` };
     }
   };
 
   const scanFace = async () => {
     setError(null);
-    setResult(null);
+    setResults([]);
 
-    if (!camRef.current || !camRef.current.isStreaming()) {
-      setError('Please turn on the camera first.');
-      return;
-    }
-    if (candidates.length === 0) {
-      setError('No reference photos available. Add profile photos to students/staff to enable AI identification.');
-      return;
-    }
+    if (!camRef.current || !camRef.current.isStreaming()) { setError('Camera is still starting. Please wait a moment.'); return; }
+    if (candidates.length === 0) { setError('No reference photos available. Record faces on student/staff profiles first.'); return; }
 
     setPhase('scanning');
-
-    // 1. Capture a frame from the live camera
     const dataURL = camRef.current.capture();
     if (!dataURL) { setError('Could not capture a frame. Please retry.'); setPhase('fail'); return; }
 
     try {
-      // 2. Upload the captured frame
       const blob = await (await fetch(dataURL)).blob();
       const file = new File([blob], 'face-capture.jpg', { type: 'image/jpeg' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
-      // 3. Ask the vision model to match the face against the candidate gallery
       const galleryUrls = candidates.map(p => p.photo_url);
       const prompt = `You are a facial recognition assistant for a school attendance system.
-Image #1 is a live camera capture of a person at the entrance.
-Images #2 through #${galleryUrls.length + 1} are reference photos of enrolled people, provided in this exact order:
+Image #1 is a live camera capture that may contain ONE OR MORE people.
+Images #2 through #${galleryUrls.length + 1} are reference photos of enrolled people, in this exact order:
 ${candidates.map((p, i) => `#${i + 2} — ${p.name} (${p.type})`).join('\n')}
 
-Compare the face in image #1 to each reference image.
-- If there is a clear match (same person), return matched_index = the 1-based index of the matching reference (1 = first reference, i.e. image #2) and a confidence score 0–100.
-- If the face is blurry, occluded, or no reference matches well, return matched_index = null and a low confidence.
-Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reason": string}`;
+Identify every visible face in image #1 and match it to the best matching reference image (if any). Return a match for EACH distinct face detected.
+- matched_index: 1-based index of the matching reference (1 = first reference, i.e. image #2).
+- confidence: 0–100. Only include matches with confidence >= 55. If a face has no good reference match, omit it.
+Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": number, "confidence": number}], "reason": string}`;
 
       const llm = await base44.integrations.Core.InvokeLLM({
         prompt,
@@ -164,39 +142,56 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
         response_json_schema: {
           type: 'object',
           properties: {
-            matched_index: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
-            confidence: { type: 'number' },
+            total_faces: { type: 'number' },
+            matches: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  matched_index: { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+                  confidence: { type: 'number' },
+                },
+              },
+            },
             reason: { type: 'string' },
           },
         },
       });
 
-      const matched = llm?.matched_index;
-      const confidence = Math.round(Number(llm?.confidence) || 0);
+      const matches = Array.isArray(llm?.matches) ? llm.matches : [];
+      const valid = matches.filter(m => m.matched_index != null && m.matched_index >= 1 && m.matched_index <= candidates.length && Number(m.confidence) >= 55);
 
-      if (matched == null || matched < 1 || matched > candidates.length || confidence < 55) {
-        setResult({ person: null, confidence, reason: llm?.reason || 'No confident match' });
+      if (valid.length === 0) {
+        setResults([{ ok: false, person: null, confidence: Math.round(Number(matches[0]?.confidence) || 0), error: llm?.reason || 'No confident match' }]);
         setPhase('fail');
-        await logAudit('facial_scan_failed', 'Attendance', '', `No match (confidence ${confidence}%): ${llm?.reason || ''}`);
+        await logAudit('facial_scan_failed', 'Attendance', '', `No match: ${llm?.reason || ''}`);
         return;
       }
 
-      const person = candidates[matched - 1];
-      const ok = await recordAttendance(person, confidence);
-      setPhase(ok ? 'success' : 'fail');
+      const outcomes = [];
+      for (const m of valid) {
+        const person = candidates[m.matched_index - 1];
+        const conf = Math.round(Number(m.confidence) || 0);
+        outcomes.push(await recordAttendance(person, conf));
+      }
+      setResults(outcomes);
+      setPhase(outcomes.some(o => o.ok) ? 'success' : 'fail');
+      load();
     } catch (e) {
       setError('AI identification failed: ' + (e?.message || 'unexpected error') + '. Please retry.');
       setPhase('fail');
     }
   };
 
-  const reset = () => { setPhase('idle'); setResult(null); setError(null); };
+  const reset = () => { setPhase('idle'); setResults([]); setError(null); };
 
   const today = new Date().toLocaleDateString('en-CA');
   const todays = logbook.filter(a => a.date === today);
   const present = todays.filter(a => a.status === 'present').length;
   const late = todays.filter(a => a.status === 'late').length;
   const inside = people.filter(p => p.inside_status === 'inside').length;
+
+  const okCount = results.filter(r => r.ok).length;
 
   const frameColor = phase === 'scanning' ? 'border-yellow-400 animate-pulse'
     : phase === 'success' ? 'border-green-400' : phase === 'fail' ? 'border-red-400' : 'border-white/70';
@@ -206,7 +201,7 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
       <div className="flex items-center gap-2">
         <ScanFace className="w-5 h-5 text-[hsl(var(--kp-teal))]" />
         <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--kp-teal))]">Attendance</h1>
-        <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-semibold">AI FACIAL ID</span>
+        <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-semibold flex items-center gap-1"><Users2 className="w-3 h-3" /> MULTI-FACE AI</span>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -218,7 +213,7 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Scanner */}
         <div className="kp-panel rounded-2xl p-4 sm:p-6 lg:col-span-2">
-          <p className="text-sm text-gray-500 mb-3">Turn on the camera and tap <strong>Scan Face</strong>. The AI identifies the person by matching their face against enrolled profile photos and records attendance.</p>
+          <p className="text-sm text-gray-500 mb-3">The camera is on automatically. Point it at one or more people and tap <strong>Scan Face</strong> — the AI identifies everyone in frame and records each person's attendance.</p>
 
           <div className="mb-4">
             <CameraViewfinder
@@ -235,13 +230,13 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
                 {phase === 'scanning' && (
                   <div className="text-white drop-shadow">
                     <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
-                    <p className="text-sm font-medium">AI identifying face...</p>
+                    <p className="text-sm font-medium">Identifying faces...</p>
                   </div>
                 )}
                 {phase === 'success' && (
                   <div>
                     <CheckCircle2 className="w-14 h-14 mx-auto mb-1 text-green-400 drop-shadow" />
-                    <p className="text-green-400 font-bold text-base drop-shadow">Identified</p>
+                    <p className="text-green-400 font-bold text-base drop-shadow">{okCount} Recorded</p>
                   </div>
                 )}
                 {phase === 'fail' && (
@@ -260,21 +255,23 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
             </div>
           )}
 
-          {result?.person && (
-            <div className="mb-3 p-3 rounded-lg bg-green-50 border border-green-200 flex items-center gap-3 text-sm text-green-700">
-              <CheckCircle2 className="w-5 h-5 shrink-0" />
-              <div className="flex-1">
-                <span className="font-medium">{result.person.name}</span> identified at {result.confidence}% confidence. Checked {result.type.replace('_', ' ')} at {result.time}. Now {result.insideStatus}.
-              </div>
-            </div>
-          )}
-          {result && !result.person && (
-            <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2 text-sm text-red-700">
-              <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <span className="font-medium">No match found</span> ({result.confidence}%). {result.reason}
-                <p className="mt-1 text-xs">Tip: narrow the search below, or make sure profile photos are added for this person.</p>
-              </div>
+          {/* Results — one card per recognized/failed person */}
+          {results.length > 0 && (
+            <div className="mb-3 space-y-2">
+              {results.map((r, i) => (
+                <div key={i} className={`p-3 rounded-lg border flex items-center gap-3 text-sm ${r.ok ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                  {r.ok ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+                  {r.ok ? (
+                    <div className="flex-1">
+                      <span className="font-medium">{r.person.name}</span> — {r.confidence}% confidence. Checked {r.type.replace('_', ' ')} at {r.time}. Now {r.insideStatus}. <span className="capitalize">({r.status})</span>
+                    </div>
+                  ) : (
+                    <div className="flex-1">
+                      {r.person ? <span className="font-medium">{r.person.name}: </span> : ''}{r.error}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
@@ -285,7 +282,7 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
               className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
           </div>
           <div className="text-xs text-gray-500 mb-3">
-            {withPhotos.length} people have reference photos. AI will compare against the top {candidates.length} {search.trim() ? 'matching' : 'available'}:
+            {withPhotos.length} people have facial specimens. AI will compare against the top {candidates.length} {search.trim() ? 'matching' : 'available'}:
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto kp-scroll-thin mb-4">
             {candidates.map(p => (
@@ -296,7 +293,7 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
               </div>
             ))}
             {candidates.length === 0 && (
-              <p className="text-sm text-gray-400 col-span-full text-center py-4">No reference photos. Add profile photos to people first.</p>
+              <p className="text-sm text-gray-400 col-span-full text-center py-4">No facial specimens yet. Record faces on profiles first.</p>
             )}
           </div>
 
@@ -309,7 +306,7 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
           )}
           {phase === 'success' && (
             <button onClick={reset} className="w-full py-3 rounded-xl border border-[hsl(var(--kp-teal))] text-[hsl(var(--kp-teal))] font-bold text-sm hover:bg-[hsl(var(--kp-teal))]/10 flex items-center justify-center gap-2">
-              <RefreshCw className="w-5 h-5" /> Scan Another
+              <RefreshCw className="w-5 h-5" /> Scan Again
             </button>
           )}
           {phase === 'fail' && (
