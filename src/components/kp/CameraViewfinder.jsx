@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Camera, CameraOff, Loader2, RefreshCw } from 'lucide-react';
 
 /**
@@ -8,8 +8,9 @@ import { Camera, CameraOff, Loader2, RefreshCw } from 'lucide-react';
  *   onStart, onStop, onError callbacks
  *   overlay: ReactNode rendered on top of the video (e.g. face frame, status)
  *   facingMode: 'user' | 'environment' (default 'user' = front camera)
+ * Ref exposes: { capture() -> dataURL|null, startCamera(), isStreaming() }
  */
-export default function CameraViewfinder({ active = false, onStart, onStop, onError, overlay, facingMode = 'user', children }) {
+const CameraViewfinder = forwardRef(function CameraViewfinder({ active = false, onStart, onStop, onError, overlay, facingMode = 'user', children }, ref) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [streaming, setStreaming] = useState(false);
@@ -40,7 +41,6 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
       try {
         stream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (e) {
-        // Fallback without facingMode (some desktops)
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
       streamRef.current = stream;
@@ -63,18 +63,32 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
     }
   };
 
-  // Stop camera when deactivated (e.g. after a result or mode change)
+  // Capture a single frame as a JPEG data URL (mirrored to match the preview for front camera)
+  const capture = () => {
+    const video = videoRef.current;
+    if (!video || !streaming) return null;
+    const w = video.videoWidth || 640;
+    const h = video.videoHeight || 480;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (facingMode === 'user') { ctx.translate(w, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(video, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', 0.8);
+  };
+
+  useImperativeHandle(ref, () => ({ capture, startCamera, isStreaming: () => streaming }), [streaming]);
+
   useEffect(() => {
     if (!active && streaming) stopStream();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  // Cleanup on unmount
   useEffect(() => () => stopStream(), []);
 
   return (
     <div className="relative aspect-[4/3] sm:aspect-video bg-gray-900 rounded-xl overflow-hidden flex items-center justify-center">
-      {/* Live video stream */}
       <video
         ref={videoRef}
         autoPlay
@@ -83,17 +97,14 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
         className={`absolute inset-0 w-full h-full object-cover ${facingMode === 'user' ? '-scale-x-100' : ''} ${streaming ? 'opacity-100' : 'opacity-0'}`}
       />
 
-      {/* Overlay (face frame, scan line, status) */}
       {streaming && (
         <div className="absolute inset-0 pointer-events-none">{overlay}</div>
       )}
 
-      {/* Children (status text, buttons) */}
       <div className="relative z-10 w-full h-full flex items-center justify-center">
         {children}
       </div>
 
-      {/* Idle / not started state — user must tap to start (required on mobile) */}
       {!streaming && !starting && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 gap-3 bg-black/30">
           <Camera className="w-12 h-12 opacity-50" />
@@ -104,7 +115,6 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
         </div>
       )}
 
-      {/* Starting state */}
       {starting && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-2 bg-black/40">
           <Loader2 className="w-10 h-10 animate-spin" />
@@ -112,7 +122,6 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
         </div>
       )}
 
-      {/* Error state */}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-3 bg-black/60 px-4 text-center">
           <CameraOff className="w-12 h-12 text-red-400" />
@@ -123,7 +132,6 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
         </div>
       )}
 
-      {/* Live indicator */}
       {streaming && (
         <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/50 rounded-full px-2.5 py-1">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -132,4 +140,6 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
       )}
     </div>
   );
-}
+});
+
+export default CameraViewfinder;
