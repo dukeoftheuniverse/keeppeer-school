@@ -63,14 +63,9 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
     }
   };
 
-  // Auto-start/stop based on active prop
+  // Stop camera when deactivated (e.g. after a result or mode change)
   useEffect(() => {
-    if (active && !streaming && !starting && !error) {
-      startCamera();
-    }
-    if (!active && streaming) {
-      stopStream();
-    }
+    if (!active && streaming) stopStream();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
@@ -98,12 +93,12 @@ export default function CameraViewfinder({ active = false, onStart, onStop, onEr
         {children}
       </div>
 
-      {/* Idle / not started state */}
+      {/* Idle / not started state — user must tap to start (required on mobile) */}
       {!streaming && !starting && !error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 gap-3">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 gap-3 bg-black/30">
           <Camera className="w-12 h-12 opacity-50" />
-          <p className="text-sm px-4 text-center">Tap "Start Camera" to begin live face scan</p>
-          <button onClick={startCamera} className="px-4 py-2 rounded-lg bg-[hsl(var(--kp-teal))] text-white text-sm font-semibold hover:brightness-105 flex items-center gap-2">
+          <p className="text-sm px-4 text-center">Tap below to turn on the camera and begin a live face scan</p>
+          <button onClick={startCamera} className="px-5 py-2.5 rounded-lg bg-[hsl(var(--kp-teal))] text-white text-sm font-semibold hover:brightness-105 flex items-center gap-2 shadow-lg">
             <Camera className="w-4 h-4" /> Start Camera
           </button>
         </div>
