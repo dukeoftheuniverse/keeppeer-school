@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import CameraViewfinder from '@/components/kp/CameraViewfinder';
 import { Avatar } from '@/components/kp/ui';
+import IronManHUD from '@/components/kp/IronManHUD';
 import { logAudit, createNotification } from '@/lib/audit';
 import {
   ScanFace, CheckCircle2, XCircle, Loader2, Pause, Play, AlertTriangle,
@@ -26,7 +27,6 @@ export default function AttendanceScanner() {
   const scanRef = useRef(null);
   const [people, setPeople] = useState([]);
   const [logbook, setLogbook] = useState([]);
-  const [search, setSearch] = useState('');
   const [phase, setPhase] = useState('idle'); // idle | scanning | success | fail
   const [results, setResults] = useState([]); // [{ok, person, confidence, type, time, status, insideStatus, unknown, error}]
   const [error, setError] = useState(null);
@@ -53,13 +53,9 @@ export default function AttendanceScanner() {
   useEffect(() => { phaseRef.current = phase; }, [phase]);
 
   const withPhotos = useMemo(() => people.filter(p => !!p.photo_url), [people]);
+  const peopleMap = useMemo(() => Object.fromEntries(people.map(p => [p.id, p])), [people]);
 
-  const candidates = useMemo(() => {
-    const base = search.trim()
-      ? withPhotos.filter(p => `${p.name} ${p.lrn || ''} ${p.student_id || ''} ${p.employee_id || ''}`.toLowerCase().includes(search.toLowerCase()))
-      : withPhotos;
-    return base.slice(0, MAX_CANDIDATES);
-  }, [withPhotos, search]);
+  const candidates = useMemo(() => withPhotos.slice(0, MAX_CANDIDATES), [withPhotos]);
 
   // Record attendance for one person; returns an outcome object without mutating UI state.
   const recordAttendance = async (person, confidence) => {
@@ -241,9 +237,6 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
   const okCount = results.filter(r => r.ok).length;
   const unknownCount = results.filter(r => r.unknown).length;
 
-  const frameColor = phase === 'scanning' ? 'border-yellow-400 animate-pulse'
-    : phase === 'success' ? 'border-green-400' : phase === 'fail' ? (unknownCount > 0 ? 'border-red-500' : 'border-red-400') : 'border-white/70';
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -268,32 +261,8 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
               ref={camRef}
               active
               facingMode="user"
-              overlay={
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className={`w-44 h-60 sm:w-52 sm:h-72 border-4 rounded-[50%] transition-all ${frameColor}`} />
-                </div>
-              }
+              overlay={<IronManHUD phase={phase} unknown={unknownCount > 0} okCount={okCount} />}
             >
-              <div className="text-center pointer-events-none">
-                {phase === 'scanning' && (
-                  <div className="text-white drop-shadow">
-                    <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
-                    <p className="text-sm font-medium">Identifying faces...</p>
-                  </div>
-                )}
-                {phase === 'success' && (
-                  <div>
-                    <CheckCircle2 className="w-14 h-14 mx-auto mb-1 text-green-400 drop-shadow" />
-                    <p className="text-green-400 font-bold text-base drop-shadow">{okCount} Recorded</p>
-                  </div>
-                )}
-                {phase === 'fail' && (
-                  <div>
-                    {unknownCount > 0 ? <ShieldAlert className="w-14 h-14 mx-auto mb-1 text-red-500 drop-shadow" /> : <Frown className="w-14 h-14 mx-auto mb-1 text-red-400 drop-shadow" />}
-                    <p className="text-red-400 font-bold text-base drop-shadow">{unknownCount > 0 ? 'Intruder Logged' : 'Not Recognized'}</p>
-                  </div>
-                )}
-              </div>
             </CameraViewfinder>
           </div>
 
@@ -342,27 +311,6 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
             </button>
           </div>
 
-          {/* Search to narrow candidate gallery */}
-          <div className="relative mb-2">
-            <ScanFace className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Narrow candidates (optional)..."
-              className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
-          </div>
-          <div className="text-xs text-gray-500 mb-3">
-            {withPhotos.length} people have facial specimens. AI compares against the top {candidates.length} {search.trim() ? 'matching' : 'available'}:
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-40 overflow-y-auto kp-scroll-thin">
-            {candidates.map(p => (
-              <div key={p.id} className="flex flex-col items-center p-2 rounded-lg border border-gray-100 bg-white/50">
-                <Avatar name={p.name} src={p.photo_url} size="w-12 h-12" />
-                <div className="text-xs font-medium text-gray-700 text-center mt-1 truncate w-full">{p.name}</div>
-                <div className="text-[10px] text-gray-400 capitalize">{p.type}</div>
-              </div>
-            ))}
-            {candidates.length === 0 && (
-              <p className="text-sm text-gray-400 col-span-full text-center py-4">No facial specimens yet. Record faces on profiles first.</p>
-            )}
-          </div>
         </div>
 
         {/* Recent scans */}
@@ -372,8 +320,9 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
             {logbook.length === 0 ? <p className="text-sm text-gray-400 text-center py-8">No attendance records yet.</p> :
               logbook.map(s => (
                 <div key={s.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${s.scan_type === 'time_in' ? 'bg-green-100' : 'bg-blue-100'}`}>
-                    {s.scan_type === 'time_in' ? <LogIn className="w-4 h-4 text-green-600" /> : <LogOut className="w-4 h-4 text-blue-600" />}
+                  <Avatar name={s.person_name} src={peopleMap[s.person_id]?.photo_url} size="w-9 h-9" />
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${s.scan_type === 'time_in' ? 'bg-green-100' : 'bg-blue-100'}`}>
+                    {s.scan_type === 'time_in' ? <LogIn className="w-3.5 h-3.5 text-green-600" /> : <LogOut className="w-3.5 h-3.5 text-blue-600" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-700 truncate">{s.person_name}</div>
