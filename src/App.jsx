@@ -28,15 +28,6 @@ import IDMaker from '@/pages/IDMaker';
 import AttendanceScanner from '@/pages/AttendanceScanner';
 import Reports from '@/pages/Reports';
 import DownloadSource from '@/pages/DownloadSource';
-import FacialRecognitionDashboard from '@/pages/FacialRecognitionDashboard';
-import ScanRecognizeFace from '@/pages/ScanRecognizeFace';
-import RecordProfilePerson from '@/pages/RecordProfilePerson';
-import RegisteredFaceDatabase from '@/pages/RegisteredFaceDatabase';
-import FacialRecognitionSettings from '@/pages/FacialRecognitionSettings';
-import AttendanceRecords from '@/pages/AttendanceRecords';
-import ScannerDevices from '@/pages/ScannerDevices';
-import FailedRecognitionReview from '@/pages/FailedRecognitionReview';
-import FacialRecognitionReports from '@/pages/FacialRecognitionReports';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -85,15 +76,6 @@ const AuthenticatedApp = () => {
           <Route path="/attendance" element={<AttendanceScanner />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/download-source" element={<DownloadSource />} />
-          <Route path="/facial-recognition" element={<FacialRecognitionDashboard />} />
-          <Route path="/facial-recognition/scan" element={<ScanRecognizeFace />} />
-          <Route path="/facial-recognition/record" element={<RecordProfilePerson />} />
-          <Route path="/facial-recognition/database" element={<RegisteredFaceDatabase />} />
-          <Route path="/facial-recognition/settings" element={<FacialRecognitionSettings />} />
-          <Route path="/facial-recognition/attendance" element={<AttendanceRecords />} />
-          <Route path="/facial-recognition/scanners" element={<ScannerDevices />} />
-          <Route path="/facial-recognition/review" element={<FailedRecognitionReview />} />
-          <Route path="/facial-recognition/reports" element={<FacialRecognitionReports />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
