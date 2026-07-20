@@ -223,7 +223,7 @@ Respond ONLY as JSON: {"matched_index": number|null, "confidence": number, "reas
           <div className="mb-4">
             <CameraViewfinder
               ref={camRef}
-              active={phase !== 'success' && phase !== 'fail'}
+              active
               facingMode="user"
               overlay={
                 <div className="absolute inset-0 flex items-center justify-center">

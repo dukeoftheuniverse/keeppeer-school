@@ -80,7 +80,9 @@ const CameraViewfinder = forwardRef(function CameraViewfinder({ active = false, 
 
   useImperativeHandle(ref, () => ({ capture, startCamera, isStreaming: () => streaming }), [streaming]);
 
+  // Auto-start the camera when mounted/activated — no user tap required.
   useEffect(() => {
+    if (active && !streaming && !starting && !error) startCamera();
     if (!active && streaming) stopStream();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
