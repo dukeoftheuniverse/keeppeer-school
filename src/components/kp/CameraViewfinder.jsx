@@ -78,7 +78,7 @@ const CameraViewfinder = forwardRef(function CameraViewfinder({ active = false, 
     return canvas.toDataURL('image/jpeg', 0.8);
   };
 
-  useImperativeHandle(ref, () => ({ capture, startCamera, isStreaming: () => streaming }), [streaming]);
+  useImperativeHandle(ref, () => ({ capture, startCamera, isStreaming: () => streaming, getVideo: () => videoRef.current }), [streaming]);
 
   // Auto-start the camera when mounted/activated — no user tap required.
   useEffect(() => {
