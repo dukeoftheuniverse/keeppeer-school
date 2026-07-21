@@ -6,6 +6,7 @@ import ManualScanPanel from '@/components/kp/ManualScanPanel';
 import RfidScanPanel from '@/components/kp/RfidScanPanel';
 import QrScanPanel from '@/components/kp/QrScanPanel';
 import { useFaceTracker } from '@/hooks/useFaceTracker';
+import IpCameraPanel from '@/components/kp/IpCameraPanel';
 import AttendanceDashboard from '@/pages/AttendanceDashboard';
 import CameraManagement from '@/pages/CameraManagement';
 import { Avatar } from '@/components/kp/ui';
@@ -13,7 +14,7 @@ import { logAudit, createNotification } from '@/lib/audit';
 import {
   ScanFace, CheckCircle2, XCircle, Pause, Play, AlertTriangle,
   LogIn, LogOut, UserCheck, Clock, Users, Users2, ShieldAlert,
-  QrCode, Keyboard, Radio, Maximize2, Minimize2, LayoutDashboard, Camera
+  QrCode, Keyboard, Radio, Maximize2, Minimize2, LayoutDashboard, Camera, Wifi
 } from 'lucide-react';
 
 const MAX_CANDIDATES = 8;
@@ -46,6 +47,7 @@ export default function AttendanceScanner() {
   const [error, setError] = useState(null);
   const [paused, setPaused] = useState(false);
   const [view, setView] = useState('scanner');
+  const [cameraSource, setCameraSource] = useState('device');
   const [streaming, setStreaming] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const camBoxRef = useRef(null);
@@ -298,6 +300,20 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
         <StatCard icon={Users} label="Inside Now" value={inside} color="bg-[hsl(var(--kp-teal))]" />
       </div>
 
+      {/* Camera source toggle */}
+      <div className="kp-panel rounded-2xl p-2 grid grid-cols-2 gap-2 max-w-md">
+        <button onClick={() => setCameraSource('device')} className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${cameraSource === 'device' ? 'bg-[hsl(var(--kp-teal))] text-white shadow' : 'text-[hsl(var(--kp-teal))] hover:bg-gray-50'}`}>
+          <Camera className="w-4 h-4" /> Device Camera
+        </button>
+        <button onClick={() => setCameraSource('ip')} className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${cameraSource === 'ip' ? 'bg-[hsl(var(--kp-teal))] text-white shadow' : 'text-[hsl(var(--kp-teal))] hover:bg-gray-50'}`}>
+          <Wifi className="w-4 h-4" /> IP Camera
+        </button>
+      </div>
+
+      {cameraSource === 'ip' ? (
+        <IpCameraPanel people={people} onRecord={handleRecord} />
+      ) : (
+        <>
       {/* Mode tabs */}
       <div className="kp-panel rounded-2xl p-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
         {MODES.map((m) => (
@@ -399,6 +415,8 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
           </div>
         </div>
       </div>
+      </>
+      )}
       </>
       )}
     </div>
