@@ -1,64 +1,79 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { logAudit } from '@/lib/audit';
-import { X, Loader2, CheckCircle2, AlertTriangle, Wifi, Link2 } from 'lucide-react';
+import { X, Loader2, CheckCircle2, AlertTriangle, Wifi } from 'lucide-react';
 
-/**
- * IpConnectModal — connect an IP/network camera by its live stream URL.
- * Browsers can display MJPEG / HTTP-snapshot streams inline via <img>.
- * RTSP is NOT playable in-browser (no native support) — recommend an MJPEG URL.
- */
+// Common IP-camera MJPEG / snapshot endpoints to auto-probe from a bare IP.
+const PATHS = ['', '/video', '/mjpg/video.mjpg', '/video.mjpg', '/stream', '/cgi-bin/video', '/live', '/mjpg/1/video.mjpg'];
+
+function buildCandidates(ip) {
+  let proto = 'http';
+  let host = ip.trim();
+  if (/^https:\/\//i.test(host)) proto = 'https';
+  host = host.replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+  if (!host) return [];
+  // If a port is already present, keep it; otherwise also try :8080.
+  const hasPort = /:\d+$/.test(host);
+  const hosts = hasPort ? [host] : [host, `${host}:8080`];
+  const list = [];
+  hosts.forEach((h) => PATHS.forEach((p) => list.push(`${proto}://${h}${p}`)));
+  return list;
+}
+
+function probe(url, timeoutMs = 3500) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    let done = false;
+    const finish = (ok) => { if (done) return; done = true; img.onload = null; img.onerror = null; resolve(ok); };
+    img.onload = () => finish(true);
+    img.onerror = () => finish(false);
+    setTimeout(() => finish(false), timeoutMs);
+    img.src = url + (url.includes('?') ? '&' : '?') + '_kp=' + Date.now();
+  });
+}
+
 export default function IpConnectModal({ open, onClose, onConnected }) {
   const [name, setName] = useState('');
   const [ip, setIp] = useState('');
-  const [url, setUrl] = useState('');
   const [location, setLocation] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
-  const [previewOk, setPreviewOk] = useState(false);
+  const [streamUrl, setStreamUrl] = useState('');
 
   if (!open) return null;
 
-  const reset = () => { setName(''); setIp(''); setUrl(''); setLocation(''); setResult(null); setPreviewOk(false); setBusy(false); };
+  const reset = () => { setName(''); setIp(''); setLocation(''); setResult(null); setStreamUrl(''); setBusy(false); };
 
-  const testStream = () => new Promise((resolve) => {
-    const img = new Image();
-    let done = false;
-    const finish = (ok, msg) => { if (done) return; done = true; img.onload = null; img.onerror = null; resolve({ ok, msg }); };
-    img.onload = () => finish(true, 'Connection successful — first frame received.');
-    img.onerror = () => finish(false, 'Could not load the stream. Verify the URL, that the camera serves MJPEG/HTTP snapshot, and that browser access is allowed.');
-    setTimeout(() => finish(false, 'Connection timed out. The camera may be offline, blocking cross-origin requests, or serving RTSP (not supported in-browser).'), 7000);
-    img.src = url + (url.includes('?') ? '&' : '?') + '_kp=' + Date.now();
-  });
-
-  const handleTest = async () => {
-    if (!url) { setResult({ ok: false, msg: 'Enter a stream URL first.' }); return; }
-    setBusy(true); setResult(null); setPreviewOk(false);
-    const r = await testStream();
-    setResult(r);
-    if (r.ok) setPreviewOk(true);
-    setBusy(false);
+  const discover = async () => {
+    const candidates = buildCandidates(ip);
+    if (candidates.length === 0) return '';
+    for (const c of candidates) {
+      // eslint-disable-next-line no-await-in-loop
+      if (await probe(c)) return c;
+    }
+    return '';
   };
 
   const handleConnect = async () => {
-    if (!name || !url) { setResult({ ok: false, msg: 'Device name and stream URL are required.' }); return; }
-    setBusy(true); setResult(null);
-    const r = await testStream();
-    if (!r.ok) { setResult(r); setBusy(false); return; }
+    if (!name || !ip) { setResult({ ok: false, msg: 'Device name and IP address are required.' }); return; }
+    setBusy(true); setResult(null); setStreamUrl('');
+    const found = await discover();
+    const url = found || `http://${ip.replace(/^https?:\/\//i, '').replace(/\/.*$/, '')}/video`;
+    setStreamUrl(url);
     try {
       const created = await base44.entities.ScannerDevice.create({
         deviceName: name,
         deviceId: 'IP-' + Date.now().toString().slice(-6),
         deviceType: 'IP Camera',
         streamUrl: url,
-        ipAddress: ip || '',
+        ipAddress: ip,
         location: location || '',
         campus: '', assignedBuilding: '', assignedRoom: '',
-        status: 'Online',
+        status: found ? 'Online' : 'Offline',
         registeredDate: new Date().toLocaleDateString('en-CA'),
-        notes: 'IP camera stream',
+        notes: found ? 'IP camera — auto-discovered stream' : 'IP camera — stream not reachable, saved for retry',
       });
-      await logAudit('Camera Configuration', 'ScannerDevice', created.id, `Connected IP camera "${name}" at ${url}.`);
+      await logAudit('Camera Configuration', 'ScannerDevice', created.id, `Connected IP camera "${name}" (${ip}) → ${url}.`);
       setBusy(false);
       onConnected && onConnected();
       reset();
@@ -71,7 +86,7 @@ export default function IpConnectModal({ open, onClose, onConnected }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => { reset(); onClose(); }}>
-      <div className="kp-panel rounded-2xl shadow-2xl w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
+      <div className="kp-panel rounded-2xl shadow-2xl w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Wifi className="w-5 h-5 text-[hsl(var(--kp-teal))]" />
@@ -79,22 +94,16 @@ export default function IpConnectModal({ open, onClose, onConnected }) {
           </div>
           <button onClick={() => { reset(); onClose(); }} className="p-1 rounded-lg hover:bg-gray-100"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
-        <p className="text-xs text-gray-500 mb-3">Enter the camera's live stream URL. <strong>MJPEG</strong> or <strong>HTTP snapshot</strong> URLs play in-browser; RTSP is not supported directly.</p>
+        <p className="text-xs text-gray-500 mb-3">Just enter the camera name and IP address — the system auto-discovers a working stream.</p>
 
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Device Name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Gate IP Cam" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">IP Address</label>
-              <input value={ip} onChange={(e) => setIp(e.target.value)} placeholder="192.168.1.50" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
-            </div>
+          <div>
+            <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Device Name</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Gate Cam" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
           </div>
           <div>
-            <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Stream URL</label>
-            <input value={url} onChange={(e) => { setUrl(e.target.value); setPreviewOk(false); setResult(null); }} placeholder="http://192.168.1.50:8080/video" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
+            <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">IP Address</label>
+            <input value={ip} onChange={(e) => { setIp(e.target.value); setStreamUrl(''); setResult(null); }} placeholder="192.168.1.50" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
           </div>
           <div>
             <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Location (optional)</label>
@@ -102,10 +111,10 @@ export default function IpConnectModal({ open, onClose, onConnected }) {
           </div>
         </div>
 
-        {previewOk && (
+        {streamUrl && (
           <div className="mt-3 relative aspect-video bg-gray-900 rounded-xl overflow-hidden">
-            <img src={url} alt="IP stream preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            <div className="absolute top-2 left-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full font-mono">LIVE PREVIEW</div>
+            <img src={streamUrl} alt="IP stream preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <div className="absolute top-2 left-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full font-mono">LIVE PREVIEW · {ip}</div>
           </div>
         )}
 
@@ -116,15 +125,10 @@ export default function IpConnectModal({ open, onClose, onConnected }) {
           </div>
         )}
 
-        <div className="mt-4 flex gap-2">
-          <button onClick={handleTest} disabled={busy} className="flex-1 py-2.5 rounded-lg border border-[hsl(var(--kp-teal))] text-[hsl(var(--kp-teal))] font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />} Test Connection
-          </button>
-          <button onClick={handleConnect} disabled={busy} className="flex-1 py-2.5 rounded-lg bg-[hsl(var(--kp-green))] text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />} Connect & Save
-          </button>
-        </div>
-        <div className="mt-2 text-[11px] text-gray-400">Tip: many IP cams expose MJPEG at <code>/video/mjpg.cgi</code> or <code>/stream</code>. If the preview is blank, the camera may block cross-origin access — serve it through a proxy if needed.</div>
+        <button onClick={handleConnect} disabled={busy} className="mt-4 w-full py-2.5 rounded-lg bg-[hsl(var(--kp-green))] text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />} {busy ? 'Connecting…' : 'Connect'}
+        </button>
+        <div className="mt-2 text-[11px] text-gray-400 text-center">Auto-probes common camera endpoints (MJPEG / snapshot). If none respond, the camera is saved offline for retry.</div>
       </div>
     </div>
   );
