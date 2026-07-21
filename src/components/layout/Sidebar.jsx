@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen, FileText, RefreshCw } from 'lucide-react';
+import { Building2, LayoutDashboard, Settings, Users, GraduationCap, Contact, ClipboardList, CreditCard, BookOpen, FileText, RefreshCw, BarChart3, Camera } from 'lucide-react';
 import { clearRoleChoice } from '@/pages/DashboardRouter';
 
 const navItems = [
@@ -13,7 +13,9 @@ const navItems = [
 { label: 'Students', path: '/students', icon: Contact },
 { label: 'Classrooms', path: '/classes', icon: ClipboardList },
 { label: 'ID Maker', path: '/id-maker', icon: CreditCard },
-{ label: 'Attendance', path: '/attendance', icon: BookOpen },
+{ label: 'Attendance Scanner', path: '/attendance', icon: BookOpen },
+{ label: 'AI Dashboard', path: '/attendance-dashboard', icon: BarChart3 },
+{ label: 'Cameras & Devices', path: '/cameras', icon: Camera },
 { label: 'Reports', path: '/reports', icon: FileText }];
 
 
