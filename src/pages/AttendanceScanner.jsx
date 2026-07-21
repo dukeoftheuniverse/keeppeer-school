@@ -6,16 +6,17 @@ import ManualScanPanel from '@/components/kp/ManualScanPanel';
 import RfidScanPanel from '@/components/kp/RfidScanPanel';
 import QrScanPanel from '@/components/kp/QrScanPanel';
 import { useFaceTracker } from '@/hooks/useFaceTracker';
+import AttendanceDashboard from '@/pages/AttendanceDashboard';
+import CameraManagement from '@/pages/CameraManagement';
 import { Avatar } from '@/components/kp/ui';
 import { logAudit, createNotification } from '@/lib/audit';
 import {
   ScanFace, CheckCircle2, XCircle, Pause, Play, AlertTriangle,
   LogIn, LogOut, UserCheck, Clock, Users, Users2, ShieldAlert,
-  QrCode, Keyboard, Radio
+  QrCode, Keyboard, Radio, Maximize2, Minimize2, LayoutDashboard, Camera
 } from 'lucide-react';
 
 const MAX_CANDIDATES = 8;
-const SCAN_INTERVAL = 1000;
 
 const MODES = [
   { id: 'facial', label: 'Facial', icon: ScanFace },
@@ -44,6 +45,23 @@ export default function AttendanceScanner() {
   const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
   const [paused, setPaused] = useState(false);
+  const [view, setView] = useState('scanner');
+  const [streaming, setStreaming] = useState(false);
+  const [isFs, setIsFs] = useState(false);
+  const camBoxRef = useRef(null);
+
+  const toggleFullscreen = () => {
+    const el = camBoxRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) el.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  };
+
+  useEffect(() => {
+    const h = () => setIsFs(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', h);
+    return () => document.removeEventListener('fullscreenchange', h);
+  }, []);
 
   const load = async () => {
     try {
@@ -221,17 +239,16 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
 
   scanRef.current = scanFace;
 
-  // Auto-scan loop — facial mode only
+  // Real-time scan loop — facial mode only; re-triggers immediately after each scan completes
   useEffect(() => {
-    if (paused || mode !== 'facial') return;
-    const first = setTimeout(() => { if (phaseRef.current === 'idle' && camRef.current?.isStreaming()) scanRef.current(); }, 1500);
-    const id = setInterval(() => { if (phaseRef.current === 'idle' && camRef.current?.isStreaming()) scanRef.current(); }, SCAN_INTERVAL);
-    return () => { clearTimeout(first); clearInterval(id); };
-  }, [paused, mode]);
+    if (paused || mode !== 'facial' || phase !== 'idle' || !streaming) return;
+    const t = setTimeout(() => { if (phaseRef.current === 'idle' && camRef.current?.isStreaming()) scanRef.current(); }, 50);
+    return () => clearTimeout(t);
+  }, [phase, paused, mode, streaming]);
 
   useEffect(() => {
     if (phase === 'success' || phase === 'fail') {
-      const t = setTimeout(() => setPhase('idle'), 1200);
+      const t = setTimeout(() => setPhase('idle'), 500);
       return () => clearTimeout(t);
     }
   }, [phase]);
@@ -262,6 +279,19 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
         <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 font-semibold flex items-center gap-1"><Users2 className="w-3 h-3" /> AUTO · MULTI-FACE AI</span>
       </div>
 
+      <div className="kp-panel rounded-2xl p-2 grid grid-cols-3 gap-2">
+        {[{ id: 'scanner', label: 'Scanner', icon: ScanFace }, { id: 'dashboard', label: 'AI Dashboard', icon: LayoutDashboard }, { id: 'cameras', label: 'Cameras & Devices', icon: Camera }].map((t) => (
+          <button key={t.id} onClick={() => setView(t.id)} className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${view === t.id ? 'bg-[hsl(var(--kp-teal))] text-white shadow' : 'text-[hsl(var(--kp-teal))] hover:bg-gray-50'}`}>
+            <t.icon className="w-4 h-4" /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {view !== 'scanner' ? (
+        view === 'dashboard' ? <AttendanceDashboard /> : <CameraManagement />
+      ) : (
+        <>
+
       <div className="grid grid-cols-3 gap-3">
         <StatCard icon={UserCheck} label="Present Today" value={present} color="bg-[hsl(var(--kp-green))]" />
         <StatCard icon={Clock} label="Late Today" value={late} color="bg-[hsl(var(--kp-orange))]" />
@@ -282,12 +312,14 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
         <div className="kp-panel rounded-2xl p-4 sm:p-6 lg:col-span-2">
           {mode === 'facial' && (
             <>
-              <p className="text-sm text-gray-500 mb-3">Camera auto-scans every second. Reticles lock onto up to 5 faces; enrolled faces log time in/out; unknown faces are flagged as intruders.</p>
-              <div className="mb-4">
+              <p className="text-sm text-gray-500 mb-3">Camera scans in real time. Reticles lock onto up to 5 faces; enrolled faces log time in/out; unknown faces are flagged as intruders.</p>
+              <div ref={camBoxRef} className="mb-4 relative">
                 <CameraViewfinder
                   ref={camRef}
                   active
                   facingMode="user"
+                  onStart={() => setStreaming(true)}
+                  onStop={() => setStreaming(false)}
                   overlay={<IronManHUD phase={phase} unknown={unknownCount > 0} okCount={okCount} faces={trackedFaces} />}
                 />
               </div>
@@ -327,12 +359,17 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
 
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs text-gray-500 flex items-center gap-1.5">
-                  {paused ? <><Pause className="w-3.5 h-3.5" /> Auto-scan paused</> : <><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Auto-scanning every {SCAN_INTERVAL / 1000}s</>}
+                  {paused ? <><Pause className="w-3.5 h-3.5" /> Scanning paused</> : <><span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Real-time scanning</>}
                 </div>
-                <button onClick={() => setPaused((p) => !p)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 ${paused ? 'bg-[hsl(var(--kp-green))] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  {paused ? <><Play className="w-4 h-4" /> Resume</> : <><Pause className="w-4 h-4" /> Pause</>}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={toggleFullscreen} className="px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 bg-[hsl(var(--kp-teal))] text-white hover:brightness-105">
+                    {isFs ? <><Minimize2 className="w-4 h-4" /> Exit Fullscreen</> : <><Maximize2 className="w-4 h-4" /> Fullscreen</>}
+                  </button>
+                  <button onClick={() => setPaused((p) => !p)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 ${paused ? 'bg-[hsl(var(--kp-green))] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                    {paused ? <><Play className="w-4 h-4" /> Resume</> : <><Pause className="w-4 h-4" /> Pause</>}
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -362,6 +399,8 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

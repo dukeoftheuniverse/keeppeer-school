@@ -39,6 +39,8 @@ export default function IronManHUD({ phase, unknown, okCount, faces }) {
         faces.slice(0, 5).map((f, i) => (
           <div key={i} className="absolute" style={{ left: `${f.left * 100}%`, top: `${f.top * 100}%`, width: `${f.w * 100}%`, height: `${f.h * 100}%` }}>
             <div className="absolute inset-0 rounded-full border-2" style={{ borderColor: c, boxShadow: `0 0 12px ${c}aa` }} />
+            <div className="absolute inset-1 rounded-full border-2 border-dashed animate-spin" style={{ borderColor: `${c}cc`, animationDuration: '4s' }} />
+            <div className="absolute -inset-1 rounded-full border border-dashed animate-spin" style={{ borderColor: `${c}55`, animationDuration: '7s', animationDirection: 'reverse' }} />
             <div className="absolute -top-1 -left-1 w-3 h-3 border-l-2 border-t-2" style={{ borderColor: c }} />
             <div className="absolute -top-1 -right-1 w-3 h-3 border-r-2 border-t-2" style={{ borderColor: c }} />
             <div className="absolute -bottom-1 -left-1 w-3 h-3 border-l-2 border-b-2" style={{ borderColor: c }} />
