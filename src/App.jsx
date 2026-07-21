@@ -28,8 +28,7 @@ import IDMaker from '@/pages/IDMaker';
 import AttendanceScanner from '@/pages/AttendanceScanner';
 import Reports from '@/pages/Reports';
 import DownloadSource from '@/pages/DownloadSource';
-import AttendanceDashboard from '@/pages/AttendanceDashboard';
-import CameraManagement from '@/pages/CameraManagement';
+
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -78,8 +77,7 @@ const AuthenticatedApp = () => {
           <Route path="/attendance" element={<AttendanceScanner />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/download-source" element={<DownloadSource />} />
-          <Route path="/attendance-dashboard" element={<AttendanceDashboard />} />
-          <Route path="/cameras" element={<CameraManagement />} />
+
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
