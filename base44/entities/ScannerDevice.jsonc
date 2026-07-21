@@ -12,12 +12,22 @@
         "Tablet Camera",
         "Mobile Camera",
         "Dedicated Scanner",
-        "Webcam"
+        "Webcam",
+        "IP Camera",
+        "Bluetooth Camera"
       ],
       "default": "Desktop Camera"
     },
     "deviceId": {
       "type": "string"
+    },
+    "streamUrl": {
+      "type": "string",
+      "description": "Live feed URL for IP cameras (MJPEG/HTTP snapshot/HLS). Browsers cannot play RTSP directly \u2014 use an MJPEG or HTTP snapshot URL."
+    },
+    "bluetoothId": {
+      "type": "string",
+      "description": "Web Bluetooth device id/name when connected via Bluetooth"
     },
     "location": {
       "type": "string"

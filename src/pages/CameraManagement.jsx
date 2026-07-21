@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, KpInput, KpSelect, StatusBadge, EmptyState } from '@/components/kp/ui';
 import CameraTestModal from '@/components/kp/CameraTestModal';
+import IpConnectModal from '@/components/kp/IpConnectModal';
 import { logAudit } from '@/lib/audit';
-import { Video, Plus, Trash2, Pencil, TestTube, MapPin, Sliders, X, Camera } from 'lucide-react';
+import { Video, Plus, Trash2, Pencil, TestTube, MapPin, Sliders, X, Camera, Wifi, Bluetooth } from 'lucide-react';
 
 const DEVICE_TYPES = ['Desktop Camera', 'Tablet Camera', 'Mobile Camera', 'Dedicated Scanner', 'Webcam', 'IP Camera'];
 const STATUS_OPTS = ['Online', 'Offline', 'Maintenance', 'Disabled'];
@@ -18,6 +19,7 @@ export default function CameraManagement() {
   const [deviceForm, setDeviceForm] = useState(null); // {mode:'add'|'edit', data}
   const [locForm, setLocForm] = useState(null);
   const [testDevice, setTestDevice] = useState(null);
+  const [ipOpen, setIpOpen] = useState(false);
 
   const load = () => {
     Promise.all([
@@ -57,6 +59,28 @@ export default function CameraManagement() {
       await logAudit('Camera Configuration', 'ScannerDevice', '', `Auto-detected and registered ${toAdd.length} camera(s).`);
       load();
     } catch (e) { alert('Unable to access camera devices: ' + (e?.message || e) + '. Please allow camera permission in your browser.'); }
+  };
+
+  const connectBluetooth = async () => {
+    try {
+      if (!navigator.bluetooth) { alert('Web Bluetooth is not available in this browser. Use Chrome or Edge on desktop/Android over HTTPS.'); return; }
+      const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+      if (!device) return;
+      const devName = device.name || 'Bluetooth Camera';
+      const created = await base44.entities.ScannerDevice.create({
+        deviceName: devName,
+        deviceId: 'BT-' + (device.id || Date.now().toString().slice(-6)),
+        deviceType: 'Bluetooth Camera',
+        bluetoothId: device.id || '',
+        streamUrl: '',
+        location: '', campus: '', assignedBuilding: '', assignedRoom: '', ipAddress: '',
+        status: 'Online',
+        registeredDate: new Date().toLocaleDateString('en-CA'),
+        notes: 'Paired via Web Bluetooth. BLE does not carry video — use this entry to track a paired device.',
+      });
+      await logAudit('Camera Configuration', 'ScannerDevice', created.id, `Paired Bluetooth camera "${devName}".`);
+      load();
+    } catch (e) { if (e?.name !== 'NotFoundError') alert('Bluetooth pairing failed: ' + (e?.message || e)); }
   };
 
   const saveDevice = async () => {
@@ -102,9 +126,11 @@ export default function CameraManagement() {
           <PagePanel>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2"><Video className="w-4 h-4 text-[hsl(var(--kp-teal))]" /><h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">Cameras ({devices.length})</h3></div>
-              <div className="flex items-center gap-2">
-                <KpButton variant="outline" onClick={detectCameras}><Camera className="w-4 h-4" /> Detect Cameras</KpButton>
-                <KpButton variant="green" onClick={() => setDeviceForm({ mode: 'add', data: { deviceName: '', deviceId: 'CAM-' + Date.now().toString().slice(-5), deviceType: 'Webcam', status: 'Online', location: '', campus: '', assignedBuilding: '', assignedRoom: '', ipAddress: '', notes: '' } })}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <KpButton variant="outline" onClick={detectCameras}><Camera className="w-4 h-4" /> Detect</KpButton>
+                <KpButton variant="outline" onClick={() => setIpOpen(true)}><Wifi className="w-4 h-4" /> Connect IP</KpButton>
+                <KpButton variant="outline" onClick={connectBluetooth}><Bluetooth className="w-4 h-4" /> Bluetooth</KpButton>
+                <KpButton variant="green" onClick={() => setDeviceForm({ mode: 'add', data: { deviceName: '', deviceId: 'CAM-' + Date.now().toString().slice(-5), deviceType: 'Webcam', status: 'Online', location: '', campus: '', assignedBuilding: '', assignedRoom: '', ipAddress: '', streamUrl: '', bluetoothId: '', notes: '' } })}>
                   <Plus className="w-4 h-4" /> Add Camera
                 </KpButton>
               </div>
@@ -125,7 +151,8 @@ export default function CameraManagement() {
                     </div>
                     <div className="mt-2 text-xs text-gray-500 space-y-0.5">
                       <div className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {d.location || '—'} {d.assignedRoom ? `· ${d.assignedRoom}` : ''}</div>
-                      <div>{d.deviceType}{d.ipAddress ? ` · ${d.ipAddress}` : ''}</div>
+                      <div>{d.deviceType}{d.ipAddress ? ` · ${d.ipAddress}` : ''}{d.bluetoothId ? ' · BT' : ''}</div>
+                      {d.streamUrl && <div className="truncate text-[11px] text-gray-400 font-mono">▸ {d.streamUrl}</div>}
                     </div>
                     <div className="mt-2 flex gap-1.5">
                       <button onClick={() => setTestDevice(d)} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[hsl(var(--kp-teal))] text-white text-xs font-medium"><TestTube className="w-3 h-3" /> Test</button>
@@ -197,6 +224,7 @@ export default function CameraManagement() {
               <KpInput label="Building" value={deviceForm.data.assignedBuilding} onChange={(e) => setDeviceForm({ ...deviceForm, data: { ...deviceForm.data, assignedBuilding: e.target.value } })} />
               <KpInput label="Room" value={deviceForm.data.assignedRoom} onChange={(e) => setDeviceForm({ ...deviceForm, data: { ...deviceForm.data, assignedRoom: e.target.value } })} />
               <KpInput label="IP Address" value={deviceForm.data.ipAddress} onChange={(e) => setDeviceForm({ ...deviceForm, data: { ...deviceForm.data, ipAddress: e.target.value } })} />
+              <KpInput label="Stream URL (IP Camera — MJPEG/snapshot)" value={deviceForm.data.streamUrl || ''} onChange={(e) => setDeviceForm({ ...deviceForm, data: { ...deviceForm.data, streamUrl: e.target.value } })} className="sm:col-span-2" placeholder="http://192.168.1.50:8080/video" />
               <KpSelect label="Status" value={deviceForm.data.status} onChange={(e) => setDeviceForm({ ...deviceForm, data: { ...deviceForm.data, status: e.target.value } })}>
                 {STATUS_OPTS.map((s) => <option key={s} value={s}>{s}</option>)}
               </KpSelect>
@@ -231,6 +259,7 @@ export default function CameraManagement() {
         </div>
       )}
 
+      <IpConnectModal open={ipOpen} onClose={() => setIpOpen(false)} onConnected={load} />
       <CameraTestModal open={!!testDevice} onClose={() => setTestDevice(null)} device={testDevice} />
     </div>
   );
