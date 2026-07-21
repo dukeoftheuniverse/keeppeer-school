@@ -32,6 +32,33 @@ export default function CameraManagement() {
 
   useEffect(() => { load(); }, []);
 
+  const detectCameras = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) { alert('This browser does not support camera detection.'); return; }
+      // Unlock device labels by briefly starting a stream (required by most browsers)
+      try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); s.getTracks().forEach((t) => t.stop()); } catch (e) { /* permission may still allow enumeration without labels */ }
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      const cams = devs.filter((d) => d.kind === 'videoinput');
+      if (cams.length === 0) { alert('No cameras detected on this device.'); return; }
+      const existingIds = new Set(devices.map((d) => d.deviceId));
+      const toAdd = cams.map((c, i) => {
+        const rawLabel = (c.label || `Camera ${i + 1}`).replace(/\s*\(.*?\)\s*/g, '').trim();
+        return {
+          deviceName: rawLabel || `Camera ${i + 1}`,
+          deviceId: c.deviceId || `CAM-${Date.now()}-${i}`,
+          deviceType: 'Webcam',
+          status: 'Online',
+          location: '', campus: '', assignedBuilding: '', assignedRoom: '', ipAddress: '',
+          notes: 'Auto-detected',
+        };
+      }).filter((c) => !existingIds.has(c.deviceId));
+      if (toAdd.length === 0) { alert('All detected cameras are already registered.'); return; }
+      await base44.entities.ScannerDevice.bulkCreate(toAdd.map((c) => ({ ...c, registeredDate: new Date().toLocaleDateString('en-CA') })));
+      await logAudit('Camera Configuration', 'ScannerDevice', '', `Auto-detected and registered ${toAdd.length} camera(s).`);
+      load();
+    } catch (e) { alert('Unable to access camera devices: ' + (e?.message || e) + '. Please allow camera permission in your browser.'); }
+  };
+
   const saveDevice = async () => {
     const d = deviceForm.data;
     if (!d.deviceName || !d.deviceId) return;
@@ -75,9 +102,12 @@ export default function CameraManagement() {
           <PagePanel>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2"><Video className="w-4 h-4 text-[hsl(var(--kp-teal))]" /><h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">Cameras ({devices.length})</h3></div>
-              <KpButton variant="green" onClick={() => setDeviceForm({ mode: 'add', data: { deviceName: '', deviceId: 'CAM-' + Date.now().toString().slice(-5), deviceType: 'Webcam', status: 'Online', location: '', campus: '', assignedBuilding: '', assignedRoom: '', ipAddress: '', notes: '' } })}>
-                <Plus className="w-4 h-4" /> Add Camera
-              </KpButton>
+              <div className="flex items-center gap-2">
+                <KpButton variant="outline" onClick={detectCameras}><Camera className="w-4 h-4" /> Detect Cameras</KpButton>
+                <KpButton variant="green" onClick={() => setDeviceForm({ mode: 'add', data: { deviceName: '', deviceId: 'CAM-' + Date.now().toString().slice(-5), deviceType: 'Webcam', status: 'Online', location: '', campus: '', assignedBuilding: '', assignedRoom: '', ipAddress: '', notes: '' } })}>
+                  <Plus className="w-4 h-4" /> Add Camera
+                </KpButton>
+              </div>
             </div>
             {devices.length === 0 ? <EmptyState message="No cameras registered yet." /> : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
