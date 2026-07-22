@@ -124,7 +124,7 @@ export default function AttendanceScanner() {
   const withPhotos = useMemo(() => people.filter((p) => !!p.photo_url), [people]);
   const peopleMap = useMemo(() => Object.fromEntries(people.map((p) => [p.id, p])), [people]);
   const candidates = useMemo(() => withPhotos.slice(0, MAX_CANDIDATES), [withPhotos]);
-  const trackedFaces = useAiFaceTracker(camRef, mode === 'facial' && cameraSource === 'device' && cameraActive, 1200);
+  const trackedFaces = useAiFaceTracker(camRef, showFacialFeed, 1200);
   const facesRef = useRef([]);
   useEffect(() => { facesRef.current = trackedFaces; }, [trackedFaces]);
 
