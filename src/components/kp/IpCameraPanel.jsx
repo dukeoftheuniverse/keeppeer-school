@@ -3,8 +3,9 @@ import { base44 } from '@/api/base44Client';
 import { logAudit } from '@/lib/audit';
 import {
   Wifi, Camera, Loader2, CheckCircle2, AlertTriangle, X, ChevronDown, ChevronRight,
-  Video, VideoOff, ScanFace, ShieldCheck, Save, Play, RefreshCw, Radio
+  Video, VideoOff, ScanFace, ShieldCheck, Save, Play, RefreshCw, Radio, Link2
 } from 'lucide-react';
+import RtspStreamSlot from '@/components/kp/RtspStreamSlot';
 
 const DEFAULTS = {
   RTSP: { port: '554', path: 'live/ch00_0' },
@@ -53,6 +54,8 @@ export default function IpCameraPanel({ people = [], onRecord }) {
   const [scanStep, setScanStep] = useState(-1);
   const [scanResult, setScanResult] = useState(null);
   const [imgError, setImgError] = useState(false);
+  const [rtspUrl, setRtspUrl] = useState('');
+  const [resolvedSnapshotUrl, setResolvedSnapshotUrl] = useState('');
 
   const streamUrl = useMemo(() => buildUrl(protocol, ip, port, streamPath, username, password), [protocol, ip, port, streamPath, username, password]);
 
@@ -61,6 +64,10 @@ export default function IpCameraPanel({ people = [], onRecord }) {
     setPort(DEFAULTS[p].port);
     setStreamPath(DEFAULTS[p].path);
     setConnected(false); setTestOk(false); setTestMsg(null); setImgError(false); setScanResult(null);
+    if (p === 'RTSP') {
+      // Pre-fill the RTSP URL from the IP + credentials when empty.
+      setRtspUrl((prev) => prev || buildUrl('RTSP', ip, port, 'cam/realmonitor?channel=1&subtype=0', username, password));
+    }
   };
 
   const handleTest = async () => {
@@ -68,8 +75,14 @@ export default function IpCameraPanel({ people = [], onRecord }) {
     setTesting(true); setTestMsg(null); setTestOk(false); setImgError(false);
     if (protocol === 'RTSP') {
       setTesting(false);
-      setTestOk(false);
-      setTestMsg('RTSP streams cannot play directly in a browser. Use HTTP MJPEG for direct streaming, or set up a WebRTC/media relay. See V380 Quick Setup.');
+      if (resolvedSnapshotUrl) {
+        setConnected(true);
+        setTestOk(true);
+        setTestMsg(`Near-live snapshot stream active from ${ip}. Full RTSP live video requires a media relay.`);
+      } else {
+        setTestOk(false);
+        setTestMsg('Enter the full RTSP URL above — the slot auto-probes the DVR snapshot endpoint to render a near-live stream.');
+      }
       return;
     }
     const ok = await probe(streamUrl);
@@ -88,12 +101,14 @@ export default function IpCameraPanel({ people = [], onRecord }) {
         deviceName: deviceName || 'V380 WiFi Bulb Camera',
         deviceId: ip,
         deviceType: 'IP Camera (V380)',
-        streamUrl,
+        streamUrl: protocol === 'RTSP' ? (rtspUrl || streamUrl) : streamUrl,
         ipAddress: ip,
         location: '', campus: '', assignedBuilding: '', assignedRoom: '',
         status: connected ? 'Online' : 'Offline',
         registeredDate: new Date().toLocaleDateString('en-CA'),
-        notes: `${protocol} · ${streamPath}${username ? ` · user:${username}` : ''} · credentials${password ? ' set (not stored)' : ' none'}`,
+        notes: protocol === 'RTSP'
+          ? `RTSP · ${resolvedSnapshotUrl ? 'snapshot relay: ' + resolvedSnapshotUrl.replace(/\/\/[^@]*@/, '//') : 'no snapshot'} · credentials${password ? ' set (not stored)' : ' none'}`
+          : `${protocol} · ${streamPath}${username ? ` · user:${username}` : ''} · credentials${password ? ' set (not stored)' : ' none'}`,
       });
       await logAudit('Camera Configuration', 'ScannerDevice', created.id, `Saved V380 IP camera ${deviceName} (${ip}, ${protocol}).`);
       setSaved(true);
@@ -191,9 +206,16 @@ export default function IpCameraPanel({ people = [], onRecord }) {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
               </div>
             </div>
+            {protocol === 'RTSP' && (
+              <div>
+                <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Full RTSP URL (with credentials & channel)</label>
+                <input value={rtspUrl} onChange={(e) => setRtspUrl(e.target.value)} placeholder="rtsp://admin:pass@192.168.0.250:554/cam/realmonitor?channel=3&subtype=0" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
+                <p className="text-[10px] text-gray-500 mt-1">Paste the full Dahua/Hikvision RTSP URL — the system parses host, credentials, and channel to render a near-live snapshot stream.</p>
+              </div>
+            )}
             <div>
-              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Auto-generated Stream URL</label>
-              <div className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-xs font-mono text-gray-600 break-all min-h-[2.5rem]">{streamUrl || '—'}</div>
+              <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">{protocol === 'RTSP' ? 'Constructed RTSP URL' : 'Auto-generated Stream URL'}</label>
+              <div className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-xs font-mono text-gray-600 break-all min-h-[2.5rem]">{protocol === 'RTSP' ? (rtspUrl || '—') : (streamUrl || '—')}</div>
             </div>
             <div className="flex gap-2">
               <button onClick={handleTest} disabled={testing} className="flex-1 py-2.5 rounded-lg bg-[hsl(var(--kp-teal))] text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
@@ -218,11 +240,7 @@ export default function IpCameraPanel({ people = [], onRecord }) {
           <div className="space-y-3">
             <div className="relative aspect-video bg-gray-900 rounded-xl overflow-hidden flex items-center justify-center">
               {protocol === 'RTSP' ? (
-                <div className="p-4 text-center text-white/80 text-sm max-w-xs">
-                  <VideoOff className="w-8 h-8 mx-auto mb-2 opacity-70" />
-                  <p className="mb-3">RTSP streams require a media relay. Use HTTP MJPEG for direct browser streaming, or set up a WebRTC relay.</p>
-                  <button onClick={() => alert('WebRTC relay support coming soon.')} className="px-3 py-1.5 rounded-lg bg-white/20 text-white text-xs font-semibold">Connect via WebRTC Relay (coming soon)</button>
-                </div>
+                <RtspStreamSlot rtspUrl={rtspUrl} ip={ip} onStreamReady={(url) => setResolvedSnapshotUrl(url)} />
               ) : connected ? (
                 <>
                   <img src={streamUrl} alt="V380 live feed" className="w-full h-full object-cover" onError={(e) => { setImgError(true); e.currentTarget.style.display = 'none'; }} />
