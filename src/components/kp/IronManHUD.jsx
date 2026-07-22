@@ -41,8 +41,8 @@ export default function IronManHUD({ phase, unknown, okCount, faces }) {
         faces.slice(0, 5).map((f, i) => {
           const cx = f.left + f.w / 2;
           const cy = f.top + f.h / 2;
-          const d = Math.max(f.w, f.h) * 1.05;
-          const near = d >= NEAR;
+          const d = Math.min(f.w, f.h) * 0.95;
+          const near = Math.max(f.w, f.h) >= NEAR;
           const fc = near ? '#22C55E' : '#EF4444';
           const left = cx - d / 2;
           const top = cy - d / 2;

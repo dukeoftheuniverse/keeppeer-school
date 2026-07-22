@@ -302,10 +302,10 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
   const NEAR_FRAC = 0.2;
   useEffect(() => {
     if (paused || mode !== 'facial' || phase !== 'idle' || !streaming) return;
-    const nearNow = facesRef.current.some((f) => Math.max(f.w, f.h) * 1.05 >= NEAR_FRAC);
+    const nearNow = facesRef.current.some((f) => Math.max(f.w, f.h) >= NEAR_FRAC);
     if (!nearNow) return;
     const t = setTimeout(() => {
-      const near = facesRef.current.some((f) => Math.max(f.w, f.h) * 1.05 >= NEAR_FRAC);
+      const near = facesRef.current.some((f) => Math.max(f.w, f.h) >= NEAR_FRAC);
       if (phaseRef.current === 'idle' && camRef.current?.isStreaming() && near) scanRef.current();
     }, 50);
     return () => clearTimeout(t);
