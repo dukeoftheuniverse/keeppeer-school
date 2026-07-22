@@ -113,9 +113,10 @@ export default function IpConnectModal({ open, onClose, onConnected }) {
             const ok = await probe(`http://${ipFull}:${port}${p}`, 1200);
             if (ok) {
               const url = `http://${ipFull}:${port}${p}`;
-              found.push({ ip: ipFull, port, path: p, url });
+              const rtspUrl = `rtsp://${ipFull}:554/cam/realmonitor?channel=1&subtype=0`;
+              found.push({ ip: ipFull, port, path: p, url, rtspUrl });
               setFoundCameras([...found]);
-              setScanLog(`✓ Camera found at ${ipFull}:${port}${p}`);
+              setScanLog(`✓ Camera found at ${ipFull}:${port}${p} (RTSP likely: ${rtspUrl})`);
               return;
             }
           }
@@ -132,21 +133,23 @@ export default function IpConnectModal({ open, onClose, onConnected }) {
 
   const stopScan = () => { scanAbort.current = true; setScanning(false); };
 
-  const addFoundCamera = async (cam) => {
+  const addFoundCamera = async (cam, asRtsp = false) => {
     try {
       const created = await base44.entities.ScannerDevice.create({
         deviceName: `IP Camera ${cam.ip}`,
         deviceId: 'IP-' + Date.now().toString().slice(-6),
         deviceType: 'IP Camera',
-        streamUrl: cam.url,
+        streamUrl: asRtsp ? cam.rtspUrl : cam.url,
         ipAddress: cam.ip,
         location: '',
         campus: '', assignedBuilding: '', assignedRoom: '',
         status: 'Online',
         registeredDate: new Date().toLocaleDateString('en-CA'),
-        notes: `Auto-discovered — port ${cam.port}${cam.path}`,
+        notes: asRtsp
+          ? `Auto-discovered — RTSP stream (port 554). Snapshot probe confirmed at ${cam.url}.`
+          : `Auto-discovered — port ${cam.port}${cam.path}`,
       });
-      await logAudit('Camera Configuration', 'ScannerDevice', created.id, `Auto-discovered IP camera at ${cam.ip} → ${cam.url}.`);
+      await logAudit('Camera Configuration', 'ScannerDevice', created.id, `Auto-discovered IP camera at ${cam.ip} → ${asRtsp ? cam.rtspUrl : cam.url}.`);
       setFoundCameras((prev) => prev.filter((c) => c.ip !== cam.ip));
     } catch (e) {
       setScanLog('Save failed: ' + (e?.message || e));
@@ -241,8 +244,11 @@ export default function IpConnectModal({ open, onClose, onConnected }) {
                     <div className="text-xs font-semibold text-green-700">{cam.ip}:{cam.port}</div>
                     <div className="text-[10px] text-gray-500 font-mono truncate">{cam.url}</div>
                   </div>
-                  <button onClick={() => addFoundCamera(cam)} className="px-2 py-1 rounded-lg bg-[hsl(var(--kp-green))] text-white text-[11px] font-bold flex items-center gap-1 shrink-0">
+                  <button onClick={() => addFoundCamera(cam, false)} className="px-2 py-1 rounded-lg bg-[hsl(var(--kp-green))] text-white text-[11px] font-bold flex items-center gap-1 shrink-0">
                     <Plus className="w-3 h-3" /> Add
+                  </button>
+                  <button onClick={() => addFoundCamera(cam, true)} className="px-2 py-1 rounded-lg bg-[hsl(var(--kp-teal))] text-white text-[11px] font-bold flex items-center gap-1 shrink-0" title={cam.rtspUrl}>
+                    RTSP
                   </button>
                 </div>
               ))}

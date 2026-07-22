@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { logAudit } from '@/lib/audit';
 import {
@@ -56,6 +56,28 @@ export default function IpCameraPanel({ people = [], onRecord }) {
   const [imgError, setImgError] = useState(false);
   const [rtspUrl, setRtspUrl] = useState('');
   const [resolvedSnapshotUrl, setResolvedSnapshotUrl] = useState('');
+  const [savedCameras, setSavedCameras] = useState([]);
+  const [selectedCamId, setSelectedCamId] = useState('');
+
+  // Load saved IP/RTSP cameras so auto-discovered devices appear in the scanner.
+  const loadSavedCameras = async () => {
+    try {
+      const devices = await base44.entities.ScannerDevice.list();
+      setSavedCameras(devices.filter((d) => /IP Camera/i.test(d.deviceType || '') && /^rtsp:/i.test(d.streamUrl || '')));
+    } catch (e) { /* */ }
+  };
+  useEffect(() => { loadSavedCameras(); }, []);
+
+  const selectSavedCamera = (camId) => {
+    setSelectedCamId(camId);
+    const cam = savedCameras.find((c) => c.id === camId);
+    if (!cam) return;
+    setProtocol('RTSP');
+    setPort('554');
+    setRtspUrl(cam.streamUrl);
+    setIp(cam.ipAddress || '');
+    setDeviceName(cam.deviceName || deviceName);
+  };
 
   const streamUrl = useMemo(() => buildUrl(protocol, ip, port, streamPath, username, password), [protocol, ip, port, streamPath, username, password]);
 
@@ -206,6 +228,18 @@ export default function IpCameraPanel({ people = [], onRecord }) {
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15" />
               </div>
             </div>
+            {protocol === 'RTSP' && savedCameras.length > 0 && (
+              <div>
+                <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Discovered / Saved RTSP Cameras</label>
+                <select value={selectedCamId} onChange={(e) => selectSavedCamera(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[hsl(var(--kp-teal))]/15">
+                  <option value="">— Select a saved camera —</option>
+                  {savedCameras.map((c) => (
+                    <option key={c.id} value={c.id}>{c.deviceName} · {c.ipAddress}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-gray-500 mt-1">Cameras added via Auto-Scan Network appear here. Select one to load its RTSP URL.</p>
+              </div>
+            )}
             {protocol === 'RTSP' && (
               <div>
                 <label className="text-xs font-medium text-[hsl(var(--kp-teal))] mb-1 block">Full RTSP URL (with credentials & channel)</label>
