@@ -3,8 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, KpInput, KpSelect, StatusBadge, EmptyState } from '@/components/kp/ui';
 import CameraTestModal from '@/components/kp/CameraTestModal';
 import IpConnectModal from '@/components/kp/IpConnectModal';
+import CameraAutoScan from '@/components/kp/CameraAutoScan';
+import CameraLiveMonitor from '@/components/kp/CameraLiveMonitor';
 import { logAudit } from '@/lib/audit';
-import { Video, Plus, Trash2, Pencil, TestTube, MapPin, Sliders, X, Camera, Wifi, Bluetooth } from 'lucide-react';
+import { Video, Plus, Trash2, Pencil, TestTube, MapPin, Sliders, X, Camera, Wifi, Bluetooth, Radar } from 'lucide-react';
 
 const DEVICE_TYPES = ['Desktop Camera', 'Tablet Camera', 'Mobile Camera', 'Dedicated Scanner', 'Webcam', 'IP Camera'];
 const STATUS_OPTS = ['Online', 'Offline', 'Maintenance', 'Disabled'];
@@ -20,6 +22,7 @@ export default function CameraManagement() {
   const [locForm, setLocForm] = useState(null);
   const [testDevice, setTestDevice] = useState(null);
   const [ipOpen, setIpOpen] = useState(false);
+  const [autoScanOpen, setAutoScanOpen] = useState(false);
 
   const load = () => {
     Promise.all([
@@ -123,10 +126,12 @@ export default function CameraManagement() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
+          <CameraLiveMonitor devices={devices} />
           <PagePanel>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2"><Video className="w-4 h-4 text-[hsl(var(--kp-teal))]" /><h3 className="text-sm font-bold text-[hsl(var(--kp-teal))]">Cameras ({devices.length})</h3></div>
               <div className="flex items-center gap-2 flex-wrap">
+                <KpButton variant="teal" onClick={() => setAutoScanOpen(true)}><Radar className="w-4 h-4" /> Auto-Scan All</KpButton>
                 <KpButton variant="outline" onClick={detectCameras}><Camera className="w-4 h-4" /> Detect</KpButton>
                 <KpButton variant="outline" onClick={() => setIpOpen(true)}><Wifi className="w-4 h-4" /> Connect IP</KpButton>
                 <KpButton variant="outline" onClick={connectBluetooth}><Bluetooth className="w-4 h-4" /> Bluetooth</KpButton>
@@ -259,6 +264,7 @@ export default function CameraManagement() {
         </div>
       )}
 
+      <CameraAutoScan open={autoScanOpen} onClose={() => setAutoScanOpen(false)} onConnected={load} existingDevices={devices} />
       <IpConnectModal open={ipOpen} onClose={() => setIpOpen(false)} onConnected={load} />
       <CameraTestModal open={!!testDevice} onClose={() => setTestDevice(null)} device={testDevice} />
     </div>
