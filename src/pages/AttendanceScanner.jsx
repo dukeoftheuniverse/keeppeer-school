@@ -125,6 +125,8 @@ export default function AttendanceScanner() {
   const peopleMap = useMemo(() => Object.fromEntries(people.map((p) => [p.id, p])), [people]);
   const candidates = useMemo(() => withPhotos.slice(0, MAX_CANDIDATES), [withPhotos]);
   const trackedFaces = useFaceTracker(camRef, true, 200);
+  const facesRef = useRef([]);
+  useEffect(() => { facesRef.current = trackedFaces; }, [trackedFaces]);
 
   const recordAttendance = async (person, confidence, method = 'facial', location = '') => {
     const isStudent = person.type === 'student';
@@ -296,12 +298,18 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
 
   scanRef.current = scanFace;
 
-  // Real-time scan loop — facial mode only; re-triggers immediately after each scan completes
+  // Real-time scan loop — facial mode only; only fires when a face is close enough to scan
+  const NEAR_FRAC = 0.2;
   useEffect(() => {
     if (paused || mode !== 'facial' || phase !== 'idle' || !streaming) return;
-    const t = setTimeout(() => { if (phaseRef.current === 'idle' && camRef.current?.isStreaming()) scanRef.current(); }, 50);
+    const nearNow = facesRef.current.some((f) => Math.max(f.w, f.h) * 1.05 >= NEAR_FRAC);
+    if (!nearNow) return;
+    const t = setTimeout(() => {
+      const near = facesRef.current.some((f) => Math.max(f.w, f.h) * 1.05 >= NEAR_FRAC);
+      if (phaseRef.current === 'idle' && camRef.current?.isStreaming() && near) scanRef.current();
+    }, 50);
     return () => clearTimeout(t);
-  }, [phase, paused, mode, streaming]);
+  }, [phase, paused, mode, streaming, trackedFaces]);
 
   useEffect(() => {
     if (phase === 'success' || phase === 'fail') {
