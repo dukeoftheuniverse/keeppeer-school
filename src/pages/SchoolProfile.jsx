@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { PagePanel, PageTitle, KpButton, KpInput, KpSelect } from '@/components/kp/ui';
-import { Upload, Save, Building2, Clock } from 'lucide-react';
+import { Upload, Save, Building2, Clock, Loader2 } from 'lucide-react';
 import RolloverTool from '@/components/kp/RolloverTool';
+import { toast } from '@/components/ui/use-toast';
 
 export default function SchoolProfile() {
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [tab, setTab] = useState('details');
 
   useEffect(() => {
@@ -19,18 +21,42 @@ export default function SchoolProfile() {
   const update = (field, value) => setSchool({ ...school, [field]: value });
 
   const handleSave = async () => {
+    if (!school.school_name?.trim()) {
+      toast({ title: 'School name is required', description: 'Please enter a school name before saving.', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
-      if (school.id) await base44.entities.School.update(school.id, school);
-      else await base44.entities.School.create(school);
+      if (school.id) {
+        await base44.entities.School.update(school.id, school);
+      } else {
+        const created = await base44.entities.School.create(school);
+        setSchool({ ...school, id: created.id });
+      }
+      toast({ title: 'School profile saved' });
+    } catch (e) {
+      toast({ title: 'Failed to save', description: String(e?.message || e), variant: 'destructive' });
     } finally { setSaving(false); }
   };
 
   const handleLogo = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    update('logo_url', file_url);
+    setLogoUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      update('logo_url', file_url);
+      // Persist immediately when the school record already exists
+      if (school.id) {
+        await base44.entities.School.update(school.id, { logo_url: file_url });
+        toast({ title: 'Logo updated' });
+      }
+    } catch (e) {
+      toast({ title: 'Logo upload failed', description: String(e?.message || e), variant: 'destructive' });
+    } finally {
+      setLogoUploading(false);
+      e.target.value = '';
+    }
   };
 
   if (loading) return <div className="text-center py-12 text-gray-400">Loading...</div>;
@@ -45,8 +71,8 @@ export default function SchoolProfile() {
               {school.logo_url ? <img src={school.logo_url} alt="logo" className="w-full h-full object-cover" /> : <Building2 className="w-8 h-8 text-gray-300" />}
             </div>
             <label className="absolute -bottom-1 -right-1 w-7 h-7 bg-[hsl(var(--kp-teal))] rounded-full flex items-center justify-center cursor-pointer shadow-md">
-              <Upload className="w-3.5 h-3.5 text-white" />
-              <input type="file" className="hidden" onChange={handleLogo} accept="image/*" />
+              {logoUploading ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Upload className="w-3.5 h-3.5 text-white" />}
+              <input type="file" className="hidden" onChange={handleLogo} accept="image/*" disabled={logoUploading} />
             </label>
           </div>
           <div className="flex-1">

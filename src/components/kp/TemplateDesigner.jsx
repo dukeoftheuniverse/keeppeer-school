@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { KpButton } from '@/components/kp/ui';
 import { X, Upload, Loader2, RectangleHorizontal, RectangleVertical, Image as ImageIcon, Type, QrCode, User, Save, Eye, EyeOff, Trash2, Layers } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 const QR_BASE = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=';
 const SAMPLE_LOGO = 'https://media.base44.com/images/public/6a599666b848d4d07cd0e975/af88c433d_generated_image.png';
@@ -57,6 +58,7 @@ export default function TemplateDesigner({ template, school, tab, onSave, onClos
   const [bodyFont, setBodyFont] = useState(template?.body_font || 'Inter');
   const [logoUrl, setLogoUrl] = useState(template?.logo_url || school?.logo_url || SAMPLE_LOGO);
   const [backgroundUrl, setBackgroundUrl] = useState(template?.background_url || '');
+  const [samplePhotoUrl, setSamplePhotoUrl] = useState('');
   const [name, setName] = useState(template?.name || 'Untitled Template');
   const [elements, setElements] = useState(() => parseLayout(template));
   const [selected, setSelected] = useState('name');
@@ -86,8 +88,11 @@ export default function TemplateDesigner({ template, school, tab, onSave, onClos
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setLogoUrl(file_url);
-    } catch (err) { /* */ }
+    } catch (err) {
+      toast({ title: 'Logo upload failed', description: String(err?.message || err), variant: 'destructive' });
+    }
     setUploading(false);
+    e.target.value = '';
   };
 
   const handleBgUpload = async (e) => {
@@ -97,8 +102,25 @@ export default function TemplateDesigner({ template, school, tab, onSave, onClos
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setBackgroundUrl(file_url);
-    } catch (err) { /* */ }
+    } catch (err) {
+      toast({ title: 'Background upload failed', description: String(err?.message || err), variant: 'destructive' });
+    }
     setUploading(false);
+    e.target.value = '';
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setSamplePhotoUrl(file_url);
+    } catch (err) {
+      toast({ title: 'Photo upload failed', description: String(err?.message || err), variant: 'destructive' });
+    }
+    setUploading(false);
+    e.target.value = '';
   };
 
   const onPointerDown = (e, key) => {
@@ -134,19 +156,24 @@ export default function TemplateDesigner({ template, school, tab, onSave, onClos
     dragRef.current = null;
   };
 
-  const handleSave = () => {
-    onSave({
-      name,
-      orientation,
-      primary_color: primaryColor,
-      accent_color: accentColor,
-      font_color: fontColor,
-      header_font: headerFont,
-      body_font: bodyFont,
-      logo_url: logoUrl,
-      background_url: backgroundUrl,
-      layout: JSON.stringify(elements),
-    });
+  const handleSave = async () => {
+    try {
+      await onSave({
+        name,
+        orientation,
+        primary_color: primaryColor,
+        accent_color: accentColor,
+        font_color: fontColor,
+        header_font: headerFont,
+        body_font: bodyFont,
+        logo_url: logoUrl,
+        background_url: backgroundUrl,
+        layout: JSON.stringify(elements),
+      });
+      toast({ title: 'Design saved' });
+    } catch (e) {
+      toast({ title: 'Failed to save design', description: String(e?.message || e), variant: 'destructive' });
+    }
   };
 
   const sel = elements[selected];
@@ -173,7 +200,7 @@ export default function TemplateDesigner({ template, school, tab, onSave, onClos
       let src;
       if (key === 'logo') src = logoUrl;
       else if (key === 'qr') src = QR_BASE + encodeURIComponent(qrData);
-      else src = sample.photo_url;
+      else src = samplePhotoUrl || sample.photo_url;
       return (
         <div key={key} style={base} {...handlers} className="overflow-hidden">
           {src ? (
@@ -218,25 +245,25 @@ export default function TemplateDesigner({ template, school, tab, onSave, onClos
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-white">
       {/* Top bar */}
-      <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-gray-200 bg-[hsl(var(--kp-teal))] text-white shrink-0">
-        <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5" />
-          <input value={name} onChange={e => setName(e.target.value)} className="bg-white/15 px-3 py-1 rounded-lg text-sm font-medium text-white placeholder-white/60 focus:outline-none focus:bg-white/25 w-56" placeholder="Template name" />
-          <span className="text-xs text-white/70 capitalize hidden sm:inline">— {tab} {orientation}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-gray-200 bg-[hsl(var(--kp-teal))] text-white shrink-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-none">
+          <Layers className="w-5 h-5 shrink-0" />
+          <input value={name} onChange={e => setName(e.target.value)} className="bg-white/15 px-3 py-1 rounded-lg text-sm font-medium text-white placeholder-white/60 focus:outline-none focus:bg-white/25 w-40 sm:w-56 min-w-0" placeholder="Template name" />
+          <span className="text-xs text-white/70 capitalize hidden md:inline">— {tab} {orientation}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="flex gap-1 bg-white/15 rounded-lg p-0.5">
             <button onClick={() => { setOrientation('landscape'); if (!template?.layout) setElements(JSON.parse(JSON.stringify(DEFAULT_ELEMENTS.landscape))); }} className={`p-1.5 rounded-md ${orientation === 'landscape' ? 'bg-white text-[hsl(var(--kp-teal))]' : 'text-white'}`}><RectangleHorizontal className="w-4 h-4" /></button>
             <button onClick={() => { setOrientation('portrait'); if (!template?.layout) setElements(JSON.parse(JSON.stringify(DEFAULT_ELEMENTS.portrait))); }} className={`p-1.5 rounded-md ${orientation === 'portrait' ? 'bg-white text-[hsl(var(--kp-teal))]' : 'text-white'}`}><RectangleVertical className="w-4 h-4" /></button>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/15"><X className="w-5 h-5" /></button>
-          <KpButton variant="green" onClick={handleSave}><Save className="w-4 h-4" /> Save Design</KpButton>
+          <KpButton variant="green" onClick={handleSave} className="shrink-0"><Save className="w-4 h-4" /> Save Design</KpButton>
         </div>
       </div>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row min-h-0">
         {/* Left: layers */}
-        <div className="w-56 shrink-0 border-r border-gray-200 bg-gray-50/60 p-3 overflow-y-auto kp-scroll-thin hidden md:block">
+        <div className="order-2 md:order-1 w-full md:w-56 shrink-0 md:border-r border-b md:border-b-0 border-gray-200 bg-gray-50/60 p-3 overflow-y-auto kp-scroll-thin max-h-[45vh] md:max-h-none">
           <h4 className="text-[10px] font-bold uppercase text-gray-400 mb-2">Elements</h4>
           <div className="space-y-1">
             {Object.keys(ELEMENT_META).map(key => {
@@ -296,11 +323,24 @@ export default function TemplateDesigner({ template, school, tab, onSave, onClos
                 {backgroundUrl && <button onClick={() => setBackgroundUrl('')} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>}
               </div>
             </div>
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">Sample Photo (preview)</label>
+              <div className="flex items-center gap-1.5">
+                <div className="w-7 h-7 rounded-full bg-gray-100 border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                  {samplePhotoUrl ? <img src={samplePhotoUrl} className="w-full h-full object-cover" /> : <User className="w-3 h-3 text-gray-300" />}
+                </div>
+                <label className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-md border border-gray-200 text-[10px] cursor-pointer hover:bg-gray-50">
+                  {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />} Upload
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                </label>
+                {samplePhotoUrl && <button onClick={() => setSamplePhotoUrl('')} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Center: canvas */}
-        <div className="flex-1 flex items-center justify-center p-6 overflow-auto kp-scroll-thin bg-gray-100">
+        <div className="order-1 md:order-2 flex-1 flex items-center justify-center p-4 sm:p-6 overflow-auto kp-scroll-thin bg-gray-100">
           <div className="flex flex-col items-center gap-2">
             <div
               ref={canvasRef}
@@ -317,7 +357,7 @@ export default function TemplateDesigner({ template, school, tab, onSave, onClos
         </div>
 
         {/* Right: properties */}
-        <div className="w-64 shrink-0 border-l border-gray-200 bg-gray-50/60 p-3 overflow-y-auto kp-scroll-thin hidden lg:block">
+        <div className="order-3 md:order-3 w-full lg:w-64 shrink-0 md:border-l border-t md:border-t-0 border-gray-200 bg-gray-50/60 p-3 overflow-y-auto kp-scroll-thin max-h-[45vh] md:max-h-none">
           {sel && selMeta ? (
             <>
               <h4 className="text-[10px] font-bold uppercase text-gray-400 mb-2">{selMeta.label} Properties</h4>

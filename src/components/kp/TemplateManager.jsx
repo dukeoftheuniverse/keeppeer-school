@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { PagePanel, KpButton, StatusBadge, EmptyState } from '@/components/kp/ui';
 import { Plus, MoreVertical, Upload, Info, Pencil, Trash2, Check, Loader2, Image as ImageIcon, RotateCcw, RectangleHorizontal, RectangleVertical, LayoutTemplate } from 'lucide-react';
 import { logAudit } from '@/lib/audit';
+import { toast } from '@/components/ui/use-toast';
 import { IDCardFront, IDCardBack } from '@/components/kp/IDCardPreview';
 import TemplateDesigner from '@/components/kp/TemplateDesigner';
 
@@ -223,7 +224,9 @@ export default function TemplateManager() {
       localStorage.setItem(BG_STORAGE_KEY, JSON.stringify(stored));
       loadBackgrounds();
       setSelectedBg(0);
-    } catch (err) { /* */ }
+    } catch (err) {
+      toast({ title: 'Background upload failed', description: String(err?.message || err), variant: 'destructive' });
+    }
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -419,7 +422,9 @@ function CreateTemplateModal({ tab, onClose, onCreate, backgrounds, template }) 
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setLogoUrl(file_url);
-    } catch (err) { /* keep default */ }
+    } catch (err) {
+      toast({ title: 'Logo upload failed', description: String(err?.message || err), variant: 'destructive' });
+    }
     setUploadingLogo(false);
   };
 
