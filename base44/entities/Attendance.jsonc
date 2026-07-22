@@ -75,6 +75,10 @@
     },
     "confidence_score": {
       "type": "number"
+    },
+    "scanner_location": {
+      "type": "string",
+      "description": "The location/name of the camera that captured this scan, used to locate people across campus."
     }
   },
   "required": [

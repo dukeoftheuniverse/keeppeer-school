@@ -7,6 +7,7 @@ import RfidScanPanel from '@/components/kp/RfidScanPanel';
 import QrScanPanel from '@/components/kp/QrScanPanel';
 import { useFaceTracker } from '@/hooks/useFaceTracker';
 import IpCameraPanel from '@/components/kp/IpCameraPanel';
+import MultiCameraGrid from '@/components/kp/MultiCameraGrid';
 import AttendanceDashboard from '@/pages/AttendanceDashboard';
 import CameraManagement from '@/pages/CameraManagement';
 import { Avatar } from '@/components/kp/ui';
@@ -15,7 +16,7 @@ import {
   ScanFace, CheckCircle2, XCircle, Pause, Play, AlertTriangle,
   LogIn, LogOut, UserCheck, Clock, Users, Users2, ShieldAlert,
   QrCode, Keyboard, Radio, Maximize2, Minimize2, Camera, Wifi,
-  ChevronDown, LayoutDashboard, Activity
+  ChevronDown, LayoutDashboard, Activity, MapPin
 } from 'lucide-react';
 
 const MAX_CANDIDATES = 8;
@@ -42,6 +43,10 @@ export default function AttendanceScanner() {
   const scanRef = useRef(null);
   const [people, setPeople] = useState([]);
   const [logbook, setLogbook] = useState([]);
+  const [scanFeed, setScanFeed] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [savedCameras, setSavedCameras] = useState([]);
+  const [deviceLocation, setDeviceLocation] = useState('Main Entrance');
   const [mode, setMode] = useState('facial');
   const [phase, setPhase] = useState('idle');
   const [results, setResults] = useState([]);
@@ -67,16 +72,21 @@ export default function AttendanceScanner() {
 
   const load = async () => {
     try {
-      const [students, employees, att] = await Promise.all([
+      const [students, employees, att, locs, cams] = await Promise.all([
         base44.entities.Student.list(),
         base44.entities.Employee.list(),
-        base44.entities.Attendance.list('-created_date', 50),
+        base44.entities.Attendance.list('-created_date', 80),
+        base44.entities.ScannerLocation.list().catch(() => []),
+        base44.entities.ScannerDevice.list().catch(() => []),
       ]);
       setPeople([
         ...students.map((s) => ({ ...s, type: 'student', name: `${s.first_name} ${s.last_name}`.trim(), person_id: s.id })),
         ...employees.map((e) => ({ ...e, type: 'employee', name: `${e.first_name} ${e.last_name}`.trim(), person_id: e.id })),
       ]);
       setLogbook(att);
+      const locNames = locs.map((l) => l.locationName).filter(Boolean);
+      setLocations(locNames.length ? locNames : ['Main Entrance', 'Front Gate', 'Office', 'Library', 'Canteen', 'Gym']);
+      setSavedCameras(cams.filter((c) => c.status !== 'Disabled' && c.streamUrl));
     } catch (e) { /* */ }
   };
 
@@ -88,7 +98,7 @@ export default function AttendanceScanner() {
   const candidates = useMemo(() => withPhotos.slice(0, MAX_CANDIDATES), [withPhotos]);
   const trackedFaces = useFaceTracker(camRef, true, 600);
 
-  const recordAttendance = async (person, confidence, method = 'facial') => {
+  const recordAttendance = async (person, confidence, method = 'facial', location = '') => {
     const isStudent = person.type === 'student';
     const accountInactive = isStudent
       ? (person.enrollment_status === 'archived' || person.enrollment_status === 'transferred')
@@ -114,7 +124,7 @@ export default function AttendanceScanner() {
         person_id: person.id, person_name: person.name, person_type: person.type,
         scan_type: detectedType, status: detectedType === 'time_in' ? (isLate ? 'late' : 'present') : 'present',
         method, date: today, time, grade: person.grade, section: person.section,
-        inside_status: insideStatus, confidence_score: confidence,
+        inside_status: insideStatus, confidence_score: confidence, scanner_location: location || '',
       });
       if (isStudent) {
         await base44.entities.Student.update(person.id, {
@@ -133,8 +143,8 @@ export default function AttendanceScanner() {
       } else {
         await base44.entities.Employee.update(person.id, { inside_status: insideStatus });
       }
-      await logAudit(`${method}_scan`, 'Attendance', person.id, `${person.name} ${detectedType.replace('_', ' ')} at ${time} - ${confidence}%`);
-      return { ok: true, person, confidence, type: detectedType, time, status: isLate ? 'late' : 'present', insideStatus };
+      await logAudit(`${method}_scan`, 'Attendance', person.id, `${person.name} ${detectedType.replace('_', ' ')} at ${time} - ${confidence}% @ ${location || 'unknown'}`);
+      return { ok: true, person, confidence, type: detectedType, time, status: isLate ? 'late' : 'present', insideStatus, location };
     } catch (e) {
       return { ok: false, person, confidence, error: `Network error recording ${person.name}.` };
     }
@@ -225,12 +235,23 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
       for (const m of valid) {
         const person = candidates[m.matched_index - 1];
         const conf = Math.round(Number(m.confidence) || 0);
-        outcomes.push(await recordAttendance(person, conf, 'facial'));
+        outcomes.push(await recordAttendance(person, conf, 'facial', deviceLocation));
       }
       if (unknownCount > 0) {
         outcomes.push({ ok: false, person: null, unknown: true, error: `${unknownCount} unknown / foreign contaminant person(s) detected — logged as possible intruder.` });
       }
       setResults(outcomes);
+      const feedEntries = outcomes.map((o) => ({
+        location: deviceLocation,
+        name: o.person?.name,
+        photo: o.person ? peopleMap[o.person.id]?.photo_url : null,
+        time: o.time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        scan_type: o.type,
+        status: o.status,
+        ok: o.ok,
+        unknown: !!o.unknown,
+      }));
+      setScanFeed((prev) => [...feedEntries, ...prev].slice(0, 60));
       setPhase(outcomes.some((o) => o.ok) ? 'success' : 'fail');
       load();
     } catch (e) {
@@ -256,10 +277,16 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
   }, [phase]);
 
   const handleRecord = async (person, method, confidence = 100) => {
-    const out = await recordAttendance(person, confidence, method);
+    const out = await recordAttendance(person, confidence, method, deviceLocation);
     setResults([out.ok ? { ok: true, person, confidence: out.confidence, type: out.type, time: out.time, status: out.status, insideStatus: out.insideStatus } : { ok: false, person, error: out.error }]);
     setPhase(out.ok ? 'success' : 'fail');
-    if (out.ok) load();
+    if (out.ok) {
+      setScanFeed((prev) => [{
+        location: deviceLocation, name: person.name, photo: peopleMap[person.id]?.photo_url,
+        time: out.time, scan_type: out.type, status: out.status, ok: true,
+      }, ...prev].slice(0, 60));
+      load();
+    }
     return out;
   };
 
@@ -274,6 +301,26 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
   const unknownCount = results.filter((r) => r.unknown).length;
 
   const totalScans = todays.length;
+
+  // Locate people based on the camera that last scanned them in.
+  const lastLocByPerson = useMemo(() => {
+    const map = {};
+    for (const a of logbook) {
+      if (!a.scanner_location) continue;
+      const cur = map[a.person_id];
+      if (!cur || new Date(a.created_date) > new Date(cur.created_date)) map[a.person_id] = a;
+    }
+    return map;
+  }, [logbook]);
+  const insidePeople = people.filter((p) => p.inside_status === 'inside');
+  const byLocation = useMemo(() => {
+    const groups = {};
+    insidePeople.forEach((p) => {
+      const loc = lastLocByPerson[p.id]?.scanner_location || 'Unknown';
+      (groups[loc] = groups[loc] || []).push(p);
+    });
+    return groups;
+  }, [insidePeople, lastLocByPerson]);
 
   return (
     <div className="space-y-4">
@@ -325,17 +372,7 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
           <IpCameraPanel people={people} onRecord={handleRecord} />
         ) : mode === 'facial' ? (
           <>
-            <p className="text-sm text-gray-500 mb-3 text-center">Camera scans in real time — reticles lock onto up to 5 faces. Enrolled faces log time in/out; unknown faces are flagged as intruders.</p>
-            <div ref={camBoxRef} className="mb-4 relative rounded-xl overflow-hidden">
-              <CameraViewfinder
-                ref={camRef}
-                active
-                facingMode="user"
-                onStart={() => setStreaming(true)}
-                onStop={() => setStreaming(false)}
-                overlay={<IronManHUD phase={phase} unknown={unknownCount > 0} okCount={okCount} faces={trackedFaces} />}
-              />
-            </div>
+            <p className="text-sm text-gray-500 mb-3 text-center">Camera scans in real time — reticles lock onto up to 5 faces. Each camera logs time in/out and tags the person's location. Unknown faces are flagged as intruders.</p>
 
             {error && (
               <div className="mb-3 p-3 rounded-lg bg-orange-50 border border-orange-200 flex items-start gap-2 text-sm text-orange-700">
@@ -370,7 +407,25 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
               </div>
             )}
 
-            <div className="flex items-center justify-center gap-2">
+            <MultiCameraGrid
+              savedCameras={savedCameras}
+              scanFeed={scanFeed}
+              deviceLocation={deviceLocation}
+              onDeviceLocationChange={setDeviceLocation}
+              locationOptions={locations}>
+              <div ref={camBoxRef} className="relative aspect-video rounded-xl overflow-hidden">
+                <CameraViewfinder
+                  ref={camRef}
+                  active
+                  facingMode="user"
+                  onStart={() => setStreaming(true)}
+                  onStop={() => setStreaming(false)}
+                  overlay={<IronManHUD phase={phase} unknown={unknownCount > 0} okCount={okCount} faces={trackedFaces} />}
+                />
+              </div>
+            </MultiCameraGrid>
+
+            <div className="flex items-center justify-center gap-2 mt-4">
               <button onClick={toggleFullscreen} className="px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 bg-[hsl(var(--kp-teal))] text-white hover:brightness-105">
                 {isFs ? <><Minimize2 className="w-4 h-4" /> Exit Fullscreen</> : <><Maximize2 className="w-4 h-4" /> Fullscreen</>}
               </button>
@@ -389,22 +444,26 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
         )}
       </div>
 
-      {/* Recent scans — full width below */}
+      {/* Location Board — where is everyone right now? */}
       <div className="kp-panel rounded-2xl p-4 sm:p-6">
-        <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-4 flex items-center gap-2"><Clock className="w-4 h-4" /> Recent Scans</h3>
-        {logbook.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">No attendance records yet.</p>
+        <h3 className="text-sm font-bold text-[hsl(var(--kp-teal))] mb-4 flex items-center gap-2"><MapPin className="w-4 h-4" /> Location Board — Where is everyone?</h3>
+        {insidePeople.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-8">No one is currently inside the campus.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {logbook.map((s) => (
-              <div key={s.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-gray-50 border border-gray-100">
-                <Avatar name={s.person_name} src={peopleMap[s.person_id]?.photo_url} size="w-9 h-9" />
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${s.scan_type === 'time_in' ? 'bg-green-100' : 'bg-blue-100'}`}>
-                  {s.scan_type === 'time_in' ? <LogIn className="w-3.5 h-3.5 text-green-600" /> : <LogOut className="w-3.5 h-3.5 text-blue-600" />}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Object.entries(byLocation).map(([loc, ps]) => (
+              <div key={loc} className="rounded-xl border border-gray-100 p-3">
+                <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-[hsl(var(--kp-teal))]">
+                  <MapPin className="w-3.5 h-3.5" /> <span className="truncate">{loc}</span>
+                  <span className="ml-auto text-gray-400 font-normal">{ps.length}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-700 truncate">{s.person_name}</div>
-                  <div className="text-xs text-gray-400">{s.time} • <span className="capitalize">{s.status}</span> • {s.method}{s.confidence_score ? ` • ${s.confidence_score}%` : ''}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {ps.map((p) => (
+                    <div key={p.id} className="flex items-center gap-1.5 bg-gray-50 rounded-full pl-1 pr-2 py-0.5">
+                      <Avatar name={p.name} src={p.photo_url} size="w-6 h-6" />
+                      <span className="text-xs text-gray-700 truncate max-w-[8rem]">{p.name}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
