@@ -5,7 +5,7 @@ import IronManHUD from '@/components/kp/IronManHUD';
 import ManualScanPanel from '@/components/kp/ManualScanPanel';
 import RfidScanPanel from '@/components/kp/RfidScanPanel';
 import QrScanPanel from '@/components/kp/QrScanPanel';
-import { useFaceTracker } from '@/hooks/useFaceTracker';
+import { useAiFaceTracker } from '@/hooks/useAiFaceTracker';
 import IpCameraPanel from '@/components/kp/IpCameraPanel';
 import AttendanceDashboard from '@/pages/AttendanceDashboard';
 import CameraManagement from '@/pages/CameraManagement';
@@ -124,7 +124,7 @@ export default function AttendanceScanner() {
   const withPhotos = useMemo(() => people.filter((p) => !!p.photo_url), [people]);
   const peopleMap = useMemo(() => Object.fromEntries(people.map((p) => [p.id, p])), [people]);
   const candidates = useMemo(() => withPhotos.slice(0, MAX_CANDIDATES), [withPhotos]);
-  const trackedFaces = useFaceTracker(camRef, true, 200);
+  const trackedFaces = useAiFaceTracker(camRef, showFacialFeed, 1200);
   const facesRef = useRef([]);
   useEffect(() => { facesRef.current = trackedFaces; }, [trackedFaces]);
 
