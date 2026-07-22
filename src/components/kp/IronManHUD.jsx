@@ -36,20 +36,28 @@ export default function IronManHUD({ phase, unknown, okCount, faces }) {
       <div className="absolute left-0 right-0 h-px kp-scanline" style={{ background: `linear-gradient(90deg, transparent, ${c}, transparent)`, boxShadow: `0 0 10px ${c}, 0 0 20px ${c}` }} />
 
       {hasFaces ? (
-        faces.slice(0, 5).map((f, i) => (
-          <div key={i} className="absolute transition-all duration-200 ease-out" style={{ left: `${f.left * 100}%`, top: `${f.top * 100}%`, width: `${f.w * 100}%`, height: `${f.h * 100}%` }}>
-            <div className="absolute inset-0 rounded-full border-2" style={{ borderColor: c, boxShadow: `0 0 12px ${c}aa` }} />
-            <div className="absolute inset-1 rounded-full border-2 border-dashed animate-spin" style={{ borderColor: `${c}cc`, animationDuration: '4s' }} />
-            <div className="absolute -inset-1 rounded-full border border-dashed animate-spin" style={{ borderColor: `${c}55`, animationDuration: '7s', animationDirection: 'reverse' }} />
-            <div className="absolute -top-1 -left-1 w-3 h-3 border-l-2 border-t-2" style={{ borderColor: c }} />
-            <div className="absolute -top-1 -right-1 w-3 h-3 border-r-2 border-t-2" style={{ borderColor: c }} />
-            <div className="absolute -bottom-1 -left-1 w-3 h-3 border-l-2 border-b-2" style={{ borderColor: c }} />
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 border-r-2 border-b-2" style={{ borderColor: c }} />
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] font-mono whitespace-nowrap px-1 rounded-full" style={{ color: c, background: 'rgba(0,0,0,0.45)' }}>
-              FACE {i + 1}
+        faces.slice(0, 5).map((f, i) => {
+          const cx = f.left + f.w / 2;
+          const cy = f.top + f.h / 2;
+          const d = Math.max(f.w, f.h) * 1.05;
+          const left = cx - d / 2;
+          const top = cy - d / 2;
+          return (
+            <div key={i} className="absolute aspect-square transition-all duration-200 ease-out" style={{ left: `${left * 100}%`, top: `${top * 100}%`, width: `${d * 100}%` }}>
+              <div className="absolute inset-0 rounded-full border-2" style={{ borderColor: c, boxShadow: `0 0 14px ${c}aa` }} />
+              <div className="absolute inset-1.5 rounded-full border-2 border-dashed animate-spin" style={{ borderColor: `${c}cc`, animationDuration: '4s' }} />
+              <div className="absolute -inset-1 rounded-full border border-dashed animate-spin" style={{ borderColor: `${c}55`, animationDuration: '7s', animationDirection: 'reverse' }} />
+              <div className="absolute -top-1 -left-1 w-3 h-3 border-l-2 border-t-2" style={{ borderColor: c }} />
+              <div className="absolute -top-1 -right-1 w-3 h-3 border-r-2 border-t-2" style={{ borderColor: c }} />
+              <div className="absolute -bottom-1 -left-1 w-3 h-3 border-l-2 border-b-2" style={{ borderColor: c }} />
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 border-r-2 border-b-2" style={{ borderColor: c }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full" style={{ background: c, boxShadow: `0 0 10px ${c}` }} />
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] font-mono whitespace-nowrap px-1.5 rounded-full" style={{ color: c, background: 'rgba(0,0,0,0.5)' }}>
+                FACE {i + 1}
+              </div>
             </div>
-          </div>
-        ))
+          );
+        })
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative kp-track" style={{ width: '11rem', height: '11rem' }}>
