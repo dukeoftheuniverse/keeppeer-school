@@ -42,21 +42,29 @@ export function useFaceTracker(camRef, mirror = true, interval = 200) {
       const cur = ctx.getImageData(0, 0, MW, MH).data;
       let box = null;
       if (prevRef.current) {
-        let sx = 0, sy = 0, n = 0;
+        let minX = MW, minY = MH, maxX = 0, maxY = 0, n = 0;
         for (let y = 0; y < MH; y++) {
           for (let x = 0; x < MW; x++) {
             const i = (y * MW + x) * 4;
             const d = Math.abs(cur[i] - prevRef.current[i])
               + Math.abs(cur[i + 1] - prevRef.current[i + 1])
               + Math.abs(cur[i + 2] - prevRef.current[i + 2]);
-            if (d > 45) { sx += x; sy += y; n++; }
+            if (d > 45) {
+              if (x < minX) minX = x; if (x > maxX) maxX = x;
+              if (y < minY) minY = y; if (y > maxY) maxY = y;
+              n++;
+            }
           }
         }
         if (n > 25) {
-          let cx = sx / n / MW;
-          const cy = sy / n / MH;
+          let cx = ((minX + maxX) / 2) / MW;
+          const cy = ((minY + maxY) / 2) / MH;
+          // Size from motion extent → reticle zooms with apparent face size (distance)
+          let bw = ((maxX - minX) / MW) * 1.35;
+          let bh = ((maxY - minY) / MH) * 1.45;
+          bw = Math.min(Math.max(bw, 0.13), 0.55);
+          bh = Math.min(Math.max(bh, 0.17), 0.65);
           if (mirror) cx = 1 - cx;
-          const bw = 0.3, bh = 0.4;
           const left = Math.min(Math.max(cx - bw / 2, 0), 1 - bw);
           const top = Math.min(Math.max(cy - bh / 2, 0), 1 - bh);
           box = { left, top, w: bw, h: bh };

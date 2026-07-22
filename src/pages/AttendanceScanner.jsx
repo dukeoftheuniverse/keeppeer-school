@@ -456,7 +456,7 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
         />
 
         {/* Center: live feed + control bar + stats */}
-        <div className="lg:col-span-6 space-y-3">
+        <div className="lg:col-span-9 space-y-3">
           {/* Mode + source selector */}
           <div className="kp-panel rounded-2xl p-2 flex flex-col sm:flex-row gap-2">
             <div className="grid grid-cols-4 gap-2 flex-1">
@@ -581,6 +581,31 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
                   <button onClick={toggleFullscreen} className="absolute top-2 right-2 z-20 w-8 h-8 rounded-lg bg-black/55 text-white flex items-center justify-center hover:bg-black/70">
                     {isFs ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                   </button>
+
+                  {/* Face-detected popup — prominent in fullscreen */}
+                  {isFs && trackedFaces.length > 0 && (
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 bg-black/65 backdrop-blur-md border border-white/15 rounded-xl px-3 py-2 flex items-center gap-3">
+                      <ScanFace className="w-4 h-4 text-green-400" />
+                      <div>
+                        <div className="text-xs font-bold text-white">{trackedFaces.length} Face{trackedFaces.length > 1 ? 's' : ''} Detected</div>
+                        <div className="text-[10px] text-white/70">HUD locked · tracking active</div>
+                      </div>
+                      <div className="flex gap-1">
+                        {trackedFaces.slice(0, 5).map((_, i) => (
+                          <span key={i} className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Live activity logs overlaid inside the camera */}
+                  <div className="absolute right-2 top-12 bottom-2 z-20 w-56 max-w-[42%] hidden sm:block">
+                    <LiveActivityFeed
+                      scanFeed={scanFeed}
+                      onViewAll={() => logRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                      className="h-full !bg-black/45 !border-white/10"
+                    />
+                  </div>
                 </div>
 
                 {/* Control bar */}
@@ -616,12 +641,6 @@ Respond ONLY as JSON: {"total_faces": number, "matches": [{"matched_index": numb
           </div>
         </div>
 
-        {/* Right: live activity */}
-        <LiveActivityFeed
-          className="lg:col-span-3"
-          scanFeed={scanFeed}
-          onViewAll={() => logRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-        />
       </div>
 
       {/* ===== Bottom section ===== */}
